@@ -131,6 +131,7 @@ class JobModel(Base):
 
     id = Column(String, primary_key=True, index=True)
     kind = Column(String, nullable=False)  # case_analysis, screenshot_analysis, browser_run
+    entity_id = Column(String, nullable=True, index=True)  # associated case_id, screenshot_id, or run target
     status = Column(String, nullable=False, default="queued")  # queued, running, succeeded, failed
     result_json = Column(Text, nullable=True)
     error_json = Column(Text, nullable=True)

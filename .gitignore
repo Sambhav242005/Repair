@@ -33,6 +33,7 @@ backend/uploads/screenshots/*
 .env
 .env.local
 .env*.local
+.cloudflare/
 !.env.example
 
 # Logs

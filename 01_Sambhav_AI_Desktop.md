@@ -2,12 +2,29 @@
 
 This is the current assignment. The current team has Sambhav plus two teammates. Their detailed assignments are in `04_Factory_Automation_QA.md`. Read `00_SRS.md` and `backend/app/services/ai/COMPUTER_USE_DECISIONS.md` first. The user selected actual desktop control and Cloudflare Clef; browser-only automation does not satisfy this requirement.
 
-## Already present
+## Delivery status — 2026-10-12
+
+Implementation is delivered; live desktop acceptance remains pending at the user's request to open Calculator later. Do not mark all acceptance complete yet.
+
+- [x] Typed desktop observations, candidates, acceptance, selection and trace; shared SRS native amendment and service handoff.
+- [x] Clef selector through cf CLI, exact Choice/probability validation, explicit failure and no fallback. Live synthetic CLI and Python adapter checks passed.
+- [x] Native Windows UIA observer/executor, selected-window guards, bounded numeric text/keys/scroll, optional selected-HWND screenshot, Stop and deadlines.
+- [x] Gemma planner, grounded host candidates, fresh-state re-grounding and independent acceptance/no-effect verification. Live synthetic Gemma plan passed.
+- [x] Read-only collector with canonical payload, UTC time and private identifiers omitted; real collector output imported through the isolated API.
+- [x] 18 AI tests and 25 automation/collector tests pass. Factory operational steps are replaced with qualified-technician escalation.
+- [x] LLM-generated ordered workflow passed to Clef; live debug event tab and inspection-only CLI/UI. Live synthetic workflow/selection check passed with no input.
+- [x] Local runner with selected application, goal, Observe, Start, result trace and visible Stop. Integration README and setup supplied.
+- [ ] Live selected Calculator input/value verification and Stop demonstration; then Task Manager/Settings navigation. No successful real desktop action trace yet.
+- [ ] Gemini live call once a Gemini key/model is supplied (Ollama is configured and live-checked).
+
+Run `python -m scripts.desktop_runner` from the repository root. Setup, policy limits and teammate integration contract: `backend/app/services/automation/README.md`. React/session API integration belongs to the two teammates, not this service delivery.
+
+## Original implementation checklist (reference; status above is current)
 
 - Gemini/Ollama provider interface and typed repair/screenshot services.
 - Configurable `gemma4:31b-cloud` provider; synthetic text/image smoke checks passed in the previous AI-only checkout.
 - Three labelled fixtures, prompts, setup notes and 17 passing AI-only tests from the previous checkout. Re-run after integration; this is not evidence that the combined application passes.
-- Clef desktop architecture proposal. Clef inference and desktop execution are not implemented.
+- Clef desktop architecture, selector and native execution code are delivered; real desktop execution acceptance is pending.
 
 ## Owned paths
 

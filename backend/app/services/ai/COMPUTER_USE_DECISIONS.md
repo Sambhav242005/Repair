@@ -1,6 +1,6 @@
 # Windows desktop decisions with Cloudflare Clef
 
-Selected by the user: Clef replaces Jev as the action selector. Gemma through Ollama remains the planner and repair explanation model. This supersedes the earlier browser-only proposal. Desktop execution is not implemented yet.
+Selected by the user: Clef replaces Jev as the action selector. Gemma through Ollama remains the planner and repair explanation model. This supersedes the earlier browser-only proposal. Implementation now lives in `../automation/`; see its README for the delivered contract, supported policy and pending live desktop acceptance.
 
 ## Architecture
 
@@ -44,11 +44,11 @@ The local candidate table owns handles and arguments. Validate returned option I
 
 No browser DOM or Playwright is required for native apps. First acceptance task: select a Calculator window, choose a known visible control, execute one action, verify the displayed value and demonstrate Stop. Then extend to read-only Task Manager and Settings navigation. Reject stale snapshots, unknown actions, malformed responses, repeated no-effect actions and exceeded budgets. Keep shell execution, installation, deletion, purchases, credentials and factory machinery operation unavailable under current project constraints.
 
-The shared SRS still describes browser execution only; native desktop sessions and cross-owner interfaces need integration updates before end-to-end completion can be claimed.
+The shared SRS now has a native desktop amendment and a typed local session contract. Network session persistence and React integration remain with the other two teammates before end-to-end app completion can be claimed.
 
 ## Cloudflare setup status
 
-Use cf CLI for Cloudflare operations, per user instruction. cf is installed, no Wrangler configuration was found, and local command discovery identified `cf ai run` and `cf ai get-model-schema`. Inspect schema/help and dry-run a synthetic request before calling the service. Account authentication and live Clef inference have not been verified. Do not expose tokens in command arguments or chat.
+Use cf CLI for Cloudflare operations, per user instruction. cf is installed, no Wrangler configuration was found, and schema discovery used `cf ai get-model-schema`. Account access and live synthetic Clef inference succeeded on 2026-10-12 through both `cf ai run` and the new Python selector. Synthetic Gemma planning passed too. These are provider checks, not proof of a real desktop action. Do not expose tokens in command arguments or chat.
 
 Sources checked 2026-10-12:
 - https://developers.cloudflare.com/workers-ai/models/clef/

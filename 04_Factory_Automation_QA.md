@@ -28,8 +28,8 @@ Owned paths: `backend/app/api/`, `backend/app/models/`, `backend/app/db/`, `back
 Do these in order:
 
 - [ ] Verify merged real AI calls: ORM assets become plain records; diagnostic payload JSON is decoded; provider error codes reach failed jobs; failed analysis resets cases to open. Align backend environment/dependencies with Gemini/Ollama selection.
-- [ ] Persist job-to-case association and filter duplicate analyse requests by case. Test two simultaneous cases plus retry of the first.
-- [ ] Replace fake browser/automation success with an explicit unavailable error until actual execution exists. Keep fixtures explicitly labelled and separate from live jobs.
+- [ ] Teammate commit d39af30 added job entity_id and case filtering; finish migration for existing SQLite databases and test two simultaneous cases plus retry of the first.
+- [x] Sambhav replaced fake browser success with an explicit unavailable error. Keep fixtures labelled; Teammate 2 still verifies the failed job through the API/UI.
 - [ ] Validate offset-aware ISO dates and normalize UTC for collection, due dates, reservation windows and completion. Reject malformed/naive input with 422; alerts must remain usable.
 - [ ] Fix retained impact after replacement. Record reliable outcome chronology; exclude assets subsequently replaced/retired without relying only on case creation time.
 - [ ] Agree desktop session contract with Sambhav and Teammate 1, update `00_SRS.md`, then implement session IDs, job/status/trace persistence, Stop and provider failure handling around Sambhav's adapter.
@@ -43,7 +43,7 @@ Acceptance: concurrent cases use correct jobs; bad dates return 422; replaced as
 
 ## Shared handoffs
 
-1. Teammate 2 publishes the desktop session contract; Sambhav supplies typed observer/selector/executor services; Teammate 1 builds against the agreed contract.
+1. Sambhav delivered the typed local desktop contract in `backend/app/services/automation/models.py`, the runner and SRS amendment. Teammate 2 implements session registry/persistence and any agreed local-only API around it; Teammate 1 integrates the React flow. See the automation README.
 2. First desktop proof is one selected Calculator control, actual input, independently verified display and working Stop.
 3. Rehearse together: repair assessment, actual desktop action, saved outcome, factory conflict/recurrence, alert acknowledgement and impact.
 4. Keep separate branches and small commits; integrate through main without force-pushing or changing another person's owned files without coordination.

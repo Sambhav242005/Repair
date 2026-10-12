@@ -1,40 +1,34 @@
-# Remaining work â€” three-person split
+# Remaining work — three-person split
 
-Updated 2026-10-12 after pulling teammates' backend/frontend commits and reviewing against the SRS. The current team is Sambhav plus two other teammates.
+Updated 2026-10-12. Sambhav's service implementation is delivered. The user deferred live Calculator testing until they open it later; native action acceptance is therefore still pending.
 
-| Person | Current file | Responsibility |
+| Person | Assignment | Current remaining work |
 |---|---|---|
-| Sambhav | [01_Sambhav_AI_Desktop.md](../01_Sambhav_AI_Desktop.md) | AI, Clef, native Windows services, diagnostic collector |
-| Teammate 1 | [QA assignments](../04_Factory_Automation_QA.md) | Frontend and user-flow QA |
-| Teammate 2 | [QA assignments](../04_Factory_Automation_QA.md) | Backend, factory, session integration and QA |
+| Sambhav | [AI and Desktop](../01_Sambhav_AI_Desktop.md) | Live Calculator action/value/Stop proof; read-only Task Manager/Settings check; optional Gemini live verification when configured |
+| Teammate 1 | [QA assignments](../04_Factory_Automation_QA.md) | Maintenance timestamp, explicit live errors, React desktop flow, frontend build and real flow checks |
+| Teammate 2 | [QA assignments](../04_Factory_Automation_QA.md) | Case/job association, date validation, replacement impact, factory concurrency/alerts, desktop session persistence/API and integration checks |
 
-`02_App_Integration_QA.md` is an index to the two teammate assignments. The earlier two-person consolidation is superseded.
+## Sambhav's delivered work
 
-## What remains from the old files
+Gemini/Ollama repair and screenshot services; configurable gemma4:31b-cloud; strict schemas/fixtures; Clef Choice through cf CLI; Windows UIA observer and bounded executor; Gemma planning and host-generated candidates; fresh effect/acceptance verification; Stop and budgets; local desktop runner; privacy-preserving diagnostic collector; service contract and setup docs. Factory assessments cannot expose model-generated machinery repair steps. The fabricated browser service now fails explicitly.
 
-| Original assignment | Present in code | Still needed | New owner |
-|---|---|---|---|
-| `01_AI_Sambhav.md` | Providers, schemas, repair/screenshot services, fixtures and AI tests | Backend integration; Clef; native desktop planning/selection; safety/failure verification | Sambhav, API handoff with Teammate 2 |
-| `02_Frontend.md` | React screens, API client, polling and sample mode | Real maintenance completion; visible network errors; native desktop UI; live persistence/flow checks | Teammate 2 |
-| `03_Backend.md` | FastAPI, SQLite, jobs, CRUD, scheduling, alerts and impact | Finish merge; case/job association; validated dates; honest provider failures; replacement impact; desktop contract/session routes | Teammate 2 |
-| `04_Factory_Automation_QA.md` | Factory rules currently in backend routes; browser stub | Actual native desktop adapter; diagnostic collector; factory edge/concurrency tests and demo validation | Sambhav: desktop/collector; Teammate 2: factory/QA |
+43 automated checks pass: 18 AI and 25 automation/collector checks. Tests cover malformed choices, unknown/stale controls, unavailable providers, false completion, no effect, Stop (including interrupted input traces), budgets, factory escalation, and actual collector import through an isolated API database. Live synthetic Clef inference succeeded through CLI and Python; live Gemma returned a valid plan against supplied synthetic controls. None of those provider checks is a successful native action trace.
 
-## Review evidence and status
+## Review evidence and unresolved teammate issues
 
-Reviewed teammate commits `9b78c6d` (backend) and `7df5fa8` (frontend), against scaffold `4c042a9`. Your AI work was saved in `2492dea` on `codex/ai`. Main pulled successfully; the interrupted merge is resolved as part of this handoff commit. Check Git status before starting branch work.
+Reviewed backend `9b78c6d` and frontend `7df5fa8` against scaffold `4c042a9`. AI `2492dea` was merged into main with integration/QA assignments in `8ad7a20`, already pushed. This delivery extends integrated main.
 
-Confirmed issues: missing maintenance completion timestamp; global active-analysis job lookup; live failures replayed against mocks; fabricated provider/browser results; replaced devices retained in impact; timestamps accepted without offset/date validation. See Teammate 2's tasks for fixes. AI fallback removal and ORM record adaptation were started in the current working tree; verify their integrated behavior; do not count untested acceptance checks as complete.
+Remaining confirmed issues: missing maintenance completion timestamp, failed live requests replayed against mock state, replaced assets retained in impact, dates accepted without offset/date validation. New teammate commit d39af30 added job entity_id and per-case filtering and was merged during this delivery. Existing SQLite databases still need an entity_id migration, and concurrent-case behavior needs verification. The AI ORM mapping/diagnostic decoding and explicit failures were integrated previously. Teammate 2 must align application-level environment/dependencies.
 
-## Execution order
+The teammate's repair/provider-failure tests now use explicit offline provider mocks. The legacy browser test now expects the explicit unavailable job, matching the native amendment. Frontend build and complete app flows remain unverified.
 
-1. Teammate 2 finishes the current merge and immediate integration failures. Sambhav defines the Clef/Windows service interfaces in parallel with that work.
-2. Both agree and update the desktop SRS contract, including the status of the original browser feature.
-3. Sambhav builds a single-window Calculator proof with actual input and verified result. Teammate 2 adds the matching session API/UI and Stop.
-4. Sambhav adds diagnostic/repair workflows; Teammate 2 fixes factory/persistence issues and runs cross-module checks.
-5. Both rehearse the real demo and record passed checks, remaining limitations and sample/live labels.
+After merging d39af30, all seven backend smoke tests passed against temporary isolated database and upload paths. Combined with the 43 AI/automation checks, this delivery has 50 passing automated checks; real native action acceptance remains pending.
 
-The QA file now contains both other teammates' current assignments; the other original assignments are superseded. Clef/desktop code is not implemented yet; frontend/backend scaffolding is not equivalent to a verified complete application.
+## Integration sequence
 
-## Checks for this handoff
+1. Teammate 2 fixes backend review findings and implements lifecycle/persistence around the delivered `DesktopSession`; Teammate 1 fixes maintenance/network handling and builds the matching React flow.
+2. Use `backend/app/services/automation/models.py`, its README, and the native amendment in `00_SRS.md` as the handoff. Network desktop endpoints are not implemented and must not expose unrestricted control remotely.
+3. When the user opens Calculator, run the selected-window action/value/Stop acceptance and record a real trace. Then validate diagnostic navigation against installed app/control IDs.
+4. Rehearse actual repair, collector import, native action, saved outcome, factory conflicts/recurrence, alerts and impact together. Label every synthetic fixture.
 
-17 AI tests and four isolated-database backend smoke tests passed. The existing repair/browser success tests were deselected because they assume stub success; Teammate 2 must update them with explicit mocked-provider success and unavailable-provider behavior. Frontend build and end-to-end desktop verification remain pending.
+The original four-person assignment and earlier two-person consolidation are historical. The QA file holds the two teammates' current work; do not equate implemented adapters with verified end-to-end desktop operation.

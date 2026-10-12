@@ -1,0 +1,12 @@
+{
+  "sample_data": true,
+  "label": "Real Gemma/Clef inference with synthetic Calculator labels; no desktop input",
+  "verified_at": "2026-10-12",
+  "event_sequence": ["observation", "workflow", "plan", "clef_request", "clef_selection", "inspection", "result"],
+  "workflow": {"goal": "Display 7 in Calculator", "steps": [{"instruction": "Invoke the button with id 'sample:seven'.", "expected_observation": "The display text changes from '0' to '7'.", "stop_condition": "The display text is '7'."}], "limitations": []},
+  "selection": {"action_id": "action_0", "probabilities": {"action_0": 0.892, "action_1": 0.0219, "action_2": 0.0248, "action_3": 0.0129, "wait": 0.015, "ask_user": 0.0154, "stop": 0.018}, "confidence": 0.7641},
+  "selected_action": {"operation": "invoke", "control_id": "sample:seven"},
+  "input_executed": false,
+  "terminal_status": "needs_user",
+  "trace": []
+}

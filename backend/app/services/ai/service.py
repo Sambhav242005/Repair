@@ -58,10 +58,20 @@ async def assess_case(asset, symptoms, diagnostic=None, screenshot_bytes=None, e
         if len({s.id for s in result.steps}) != len(result.steps) or any(s.status != "pending" for s in result.steps):
             raise ValueError("Invalid new steps")
 
-    return await structured("Assess this repair case.", {
-        "asset": record(asset), "symptoms": symptoms,
+    asset_record = record(asset)
+    result = await structured("Assess this repair case.", {
+        "asset": asset_record, "symptoms": symptoms,
         "diagnostic": record(diagnostic) if diagnostic is not None else None,
         "evidence": [item.model_dump() for item in sources]}, Analysis, screenshot_bytes, provider, check)
+    if asset_record.get("category") == "factory_machine":
+        # This milestone has no validated machinery procedures. Operational repair
+        # steps from a model cannot cross that boundary, even if schema-valid.
+        from .models import Step
+        result = result.model_copy(update={"recommendation": "professional_repair", "steps": [Step(
+            id="step_qualified_review", instruction="Report the observed fault to a qualified technician from a safe location.",
+            expected_result="A qualified technician reviews the fault under the site's approved safety procedure.",
+            stop_condition="Do not approach leaking equipment, open panels, energise machinery or bypass interlocks.", status="pending")]})
+    return result
 
 
 async def explain_screenshot(image_bytes, question, *, provider: Provider | None = None) -> ScreenshotAdvice:

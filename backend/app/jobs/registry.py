@@ -47,12 +47,13 @@ class JobRegistry:
             db.close()
 
     @staticmethod
-    def create_job(kind: str, db: Session) -> JobModel:
+    def create_job(kind: str, db: Session, entity_id: Optional[str] = None) -> JobModel:
         job_id = f"job_{uuid.uuid4().hex[:12]}"
         now = utc_now_iso()
         job = JobModel(
             id=job_id,
             kind=kind,
+            entity_id=entity_id,
             status="queued",
             result_json=None,
             error_json=None,

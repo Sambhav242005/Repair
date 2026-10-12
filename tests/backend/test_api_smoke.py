@@ -67,76 +67,121 @@ async def test_screenshot_upload_validation():
         assert data["mime_type"] == "image/png"
 
 @pytest.mark.asyncio
+class FakeTestProvider:
+    def __init__(self, response_data, delay: float = 0.15):
+        self.response_data = response_data
+        self.delay = delay
+
+    async def generate(self, prompt, schema, image, timeout):
+        if self.delay:
+            await asyncio.sleep(self.delay)
+        return json.dumps(self.response_data)
+
+@pytest.mark.asyncio
 async def test_repair_case_lifecycle():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # 1. Create case
-        case_payload = {
-            "asset_id": "asset_laptop_1",
-            "symptoms": "Fan making grinding noise, system throttling under load.",
-            "screenshot_id": None,
-            "diagnostic_id": "diag_laptop_1",
-        }
-        res_case = await client.post("/api/v1/cases", json=case_payload)
-        assert res_case.status_code == 201
-        case = res_case.json()
-        case_id = case["id"]
-        assert case["status"] == "open"
+    from unittest.mock import patch
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    slow_laptop_fixture = json.loads((root / "fixtures" / "ai" / "slow_laptop.json").read_text())["result"]
 
-        # 2. Trigger analysis (202 Accepted)
-        res_analyse = await client.post(f"/api/v1/cases/{case_id}/analyse")
-        assert res_analyse.status_code == 202
-        job_id = res_analyse.json()["job_id"]
+    with patch("backend.app.services.ai.service.configured_provider", return_value=FakeTestProvider(slow_laptop_fixture)):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            # 1. Create case
+            case_payload = {
+                "asset_id": "asset_laptop_1",
+                "symptoms": "Fan making grinding noise, system throttling under load.",
+                "screenshot_id": None,
+                "diagnostic_id": "diag_laptop_1",
+            }
+            res_case = await client.post("/api/v1/cases", json=case_payload)
+            assert res_case.status_code == 201
+            case = res_case.json()
+            case_id = case["id"]
+            assert case["status"] == "open"
 
-        # Duplicate analyse returns same job_id
-        res_duplicate = await client.post(f"/api/v1/cases/{case_id}/analyse")
-        assert res_duplicate.status_code == 202
-        assert res_duplicate.json()["job_id"] == job_id
+            # 2. Trigger analysis (202 Accepted)
+            res_analyse = await client.post(f"/api/v1/cases/{case_id}/analyse")
+            assert res_analyse.status_code == 202
+            job_id = res_analyse.json()["job_id"]
 
-        # Poll job until succeeded
-        for _ in range(10):
-            await asyncio.sleep(0.1)
-            job_res = await client.get(f"/api/v1/jobs/{job_id}")
-            assert job_res.status_code == 200
-            j_data = job_res.json()
-            if j_data["status"] == "succeeded":
-                break
+            # Duplicate analyse returns same job_id
+            res_duplicate = await client.post(f"/api/v1/cases/{case_id}/analyse")
+            assert res_duplicate.status_code == 202
+            assert res_duplicate.json()["job_id"] == job_id
 
-        assert j_data["status"] == "succeeded"
+            # Poll job until succeeded
+            for _ in range(15):
+                await asyncio.sleep(0.1)
+                job_res = await client.get(f"/api/v1/jobs/{job_id}")
+                assert job_res.status_code == 200
+                j_data = job_res.json()
+                if j_data["status"] == "succeeded":
+                    break
 
-        # 3. Fetch case, verify analysis populated
-        res_updated_case = await client.get(f"/api/v1/cases/{case_id}")
-        assert res_updated_case.status_code == 200
-        case_data = res_updated_case.json()
-        assert case_data["status"] == "ready"
-        assert case_data["analysis"] is not None
-        steps = case_data["analysis"]["steps"]
-        assert len(steps) > 0
+            assert j_data["status"] == "succeeded"
 
-        # 4. Patch step status
-        first_step_id = steps[0]["id"]
-        res_step = await client.patch(
-            f"/api/v1/cases/{case_id}/steps/{first_step_id}",
-            json={"status": "completed"},
-        )
-        assert res_step.status_code == 200
-        step_case = res_step.json()
-        assert step_case["analysis"]["steps"][0]["status"] == "completed"
+            # 3. Fetch case, verify analysis populated
+            res_updated_case = await client.get(f"/api/v1/cases/{case_id}")
+            assert res_updated_case.status_code == 200
+            case_data = res_updated_case.json()
+            assert case_data["status"] == "ready"
+            assert case_data["analysis"] is not None
+            steps = case_data["analysis"]["steps"]
+            assert len(steps) > 0
 
-        # 5. Record outcome
-        res_outcome = await client.post(
-            f"/api/v1/cases/{case_id}/outcome",
-            json={"outcome": "repaired", "note": "Replaced fan bearing and cleared thermal dust."},
-        )
-        assert res_outcome.status_code == 200
-        assert res_outcome.json()["outcome"] == "repaired"
-        assert res_outcome.json()["status"] == "closed"
+            # 4. Patch step status
+            first_step_id = steps[0]["id"]
+            res_step = await client.patch(
+                f"/api/v1/cases/{case_id}/steps/{first_step_id}",
+                json={"status": "completed"},
+            )
+            assert res_step.status_code == 200
+            step_case = res_step.json()
+            assert step_case["analysis"]["steps"][0]["status"] == "completed"
 
-        # 6. Verify impact reflects confirmed repair
-        res_impact = await client.get("/api/v1/impact")
-        assert res_impact.status_code == 200
-        impact = res_impact.json()
-        assert impact["confirmed_repairs"] >= 1
-        assert impact["estimated_retained_mass_kg"] >= 1.65
+            # 5. Record outcome
+            res_outcome = await client.post(
+                f"/api/v1/cases/{case_id}/outcome",
+                json={"outcome": "repaired", "note": "Replaced fan bearing and cleared thermal dust."},
+            )
+            assert res_outcome.status_code == 200
+            assert res_outcome.json()["outcome"] == "repaired"
+            assert res_outcome.json()["status"] == "closed"
+
+            # 6. Verify impact reflects confirmed repair
+            res_impact = await client.get("/api/v1/impact")
+            assert res_impact.status_code == 200
+            impact = res_impact.json()
+            assert impact["confirmed_repairs"] >= 1
+            assert impact["estimated_retained_mass_kg"] >= 1.65
+
+@pytest.mark.asyncio
+async def test_provider_failure_resets_case_to_open():
+    from backend.app.services.ai.provider import ProviderError
+    from unittest.mock import patch
+
+    with patch("backend.app.services.ai.service.configured_provider", side_effect=ProviderError("Provider unavailable")):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            res_case = await client.post("/api/v1/cases", json={
+                "asset_id": "asset_laptop_1",
+                "symptoms": "Laptop screen flickers",
+            })
+            case_id = res_case.json()["id"]
+
+            res_analyse = await client.post(f"/api/v1/cases/{case_id}/analyse")
+            job_id = res_analyse.json()["job_id"]
+
+            for _ in range(15):
+                await asyncio.sleep(0.1)
+                job_res = await client.get(f"/api/v1/jobs/{job_id}")
+                if job_res.json()["status"] == "failed":
+                    break
+
+            assert job_res.json()["status"] == "failed"
+
+            # SRS §8 rule: Failed analysis leaves case open for retry
+            res_case_check = await client.get(f"/api/v1/cases/{case_id}")
+            assert res_case_check.json()["status"] == "open"
 
 @pytest.mark.asyncio
 async def test_factory_conflicts_and_recurrence():
@@ -217,7 +262,7 @@ async def test_browser_run_and_sources():
         assert res_bad.status_code == 422
         assert res_bad.json()["error"]["code"] == "VALIDATION_ERROR"
 
-        # Valid source runs async job
+        # Legacy browser route remains compatible, but native desktop supersedes execution.
         good_run = {
             "asset_id": "asset_laptop_1",
             "source_id": "lenovo_t480",
@@ -230,10 +275,9 @@ async def test_browser_run_and_sources():
         for _ in range(10):
             await asyncio.sleep(0.1)
             j_res = await client.get(f"/api/v1/jobs/{job_id}")
-            if j_res.json()["status"] == "succeeded":
+            if j_res.json()["status"] == "failed":
                 break
 
-        assert j_res.json()["status"] == "succeeded"
-        result = j_res.json()["result"]
-        assert result["source_id"] == "lenovo_t480"
-        assert len(result["trace"]) > 0
+        assert j_res.json()["status"] == "failed"
+        assert j_res.json()["error"]["code"] == "PROVIDER_UNAVAILABLE"
+        assert j_res.json()["result"] is None

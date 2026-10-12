@@ -1,0 +1,1 @@
+{"model":"clef","state":{"sample_data":true,"goal":"Choose stop because no application is selected"},"questions":{"next_action":{"type":"choice","instructions":"Pick stop when no application is selected.","criteria":{"wait":"Wait for an application","ask_user":"Ask for an application","stop":"Stop safely"}}}}
