@@ -141,65 +141,17 @@ async def _execute_case_analysis(case_id: str, job_id: str):
             with open(screenshot.file_path, "rb") as f:
                 screenshot_bytes = f.read()
 
-        # Check if Member 1 (AI Owner) has assess_case implemented
-        analysis_data = None
-        try:
-            from backend.app.services.ai.service import assess_case  # type: ignore
-            analysis_obj = await assess_case(
-                asset=asset,
-                symptoms=case.symptoms,
-                diagnostic=diagnostic,
-                screenshot_bytes=screenshot_bytes,
-                evidence=[],
-            )
-            analysis_data = analysis_obj.model_dump()
-        except (ImportError, AttributeError, ModuleNotFoundError):
-            # Deterministic fallback matching SRS Section 7 & 11 acceptance rules
-            analysis_data = {
-                "summary": f"Initial diagnosis for {asset.name if asset else 'asset'}: symptoms indicate software/storage bottlenecks rather than critical hardware failure.",
-                "hypotheses": [
-                    {
-                        "cause": "High background memory or disk contention",
-                        "likelihood": "high",
-                        "evidence": ["Reported slowness under standard operating load"],
-                    },
-                    {
-                        "cause": "Thermal throttling or cooling airflow obstruction",
-                        "likelihood": "medium",
-                        "evidence": ["Continuous load without system thermal logs"],
-                    },
-                ],
-                "uncertainties": [
-                    "Operating temperature readings unavailable",
-                    "Background service CPU logs not captured in sample",
-                ],
-                "steps": [
-                    {
-                        "id": "step_1",
-                        "instruction": "Inspect active background services and free at least 15% disk space.",
-                        "expected_result": "Disk capacity has at least 25 GB free buffer.",
-                        "stop_condition": "Disk remains over 95% capacity.",
-                        "status": "pending",
-                    },
-                    {
-                        "id": "step_2",
-                        "instruction": "Run non-invasive memory diagnostic and observe system responsiveness.",
-                        "expected_result": "No memory allocation faults or swap freezes observed.",
-                        "stop_condition": "Memory allocation errors occur.",
-                        "status": "pending",
-                    },
-                ],
-                "recommendation": "troubleshoot",
-                "evidence": [
-                    {
-                        "source_id": "guide_generic_perf",
-                        "title": "Standard Diagnostic & Thermal Throttling Guide",
-                        "url": "https://pcsupport.lenovo.com",
-                    }
-                ],
-                "estimated_repair_cost_paise": None,
-                "cost_basis": None,
-            }
+        from backend.app.services.ai.service import assess_case
+        if asset is None:
+            raise NotFoundException("Case asset no longer exists.")
+        asset_record = {field: getattr(asset, field) for field in
+                        ("id", "name", "category", "manufacturer", "model", "status", "mass_kg")}
+        diagnostic_record = json.loads(diagnostic.payload_json) if diagnostic else None
+        analysis_obj = await assess_case(
+            asset=asset_record, symptoms=case.symptoms, diagnostic=diagnostic_record,
+            screenshot_bytes=screenshot_bytes, evidence=[],
+        )
+        analysis_data = analysis_obj.model_dump(mode="json")
 
         case.analysis_json = json.dumps(analysis_data)
         case.status = "ready"
@@ -214,7 +166,7 @@ async def _execute_case_analysis(case_id: str, job_id: str):
             db.commit()
         except Exception:
             db.rollback()
-        JobRegistry.mark_failed(job_id, "INTERNAL_ERROR", str(e))
+        JobRegistry.mark_failed(job_id, getattr(e, "code", "INTERNAL_ERROR"), str(e))
     finally:
         db.close()
 

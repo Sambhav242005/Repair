@@ -1,27 +1,51 @@
-# Member 4 — Factory Planning, Computer Automation and QA
+# Tasks for the two teammates other than Sambhav
 
-## Shared contract
-Read `00_SRS.md` before coding. Its schemas, routes and enums are authoritative. Changes must be agreed by frontend and backend owners and updated there before implementation. Target: five hours, four members.
+Current team: three people. Sambhav owns AI, Cloudflare Clef, native Windows desktop services and the diagnostic collector in `01_Sambhav_AI_Desktop.md`. The two teammates below own application integration and QA. Names were not supplied, so they are labelled Teammate 1 and Teammate 2.
 
-## Owned paths
-`backend/app/services/factory/, backend/app/services/automation/, scripts/`
-Do not edit another member’s owned files without coordination. Work on a separate branch and integrate at 90 minutes and three hours.
+Read `00_SRS.md` first. Agree native desktop session schemas with Sambhav before adding endpoints or UI. Browser automation is not a substitute for the requested desktop control.
 
-## Your deliverables
-- Factory planning functions for maintenance, training lessons and production; exact conflict rules from SRS.
-- Alert evaluation functions using an injectable clock, returning alert candidates for backend persistence.
-- Python Playwright adapter: run_browser(asset, source_id, question) -> BrowserResult. Source IDs resolve to backend-owned approved support URLs.
-- Read-only PC collector: scripts/collect_diagnostics.py writes the SRS diagnostic fields except backend ID. User supplies asset_id. psutil collects RAM and disk usage; platform supplies OS; exclude host/user identifiers and sensitive file paths.
-- Fixture records and meaningful acceptance tests; own demo rehearsal and reset-data validation.
+## Teammate 1 — Frontend and user-flow QA
 
-## Browser computer-use implementation
-Start with one verified public manufacturer support page chosen for demo device. Configure it explicitly and disclose fixture pages when used. Launch an isolated Playwright context; navigate, read title and visible text, cap excerpt length, record actual success/failure trace, close context in finally. Check every navigation/redirect destination against allowlist. Block private/loopback/link-local targets for external browsing; local fixture mode is a separate explicit configuration. No credentials, purchases, submitted forms, downloads, shell actions or operating system control. If external browsing is unavailable, demonstrate an explicitly labelled local support-page fixture; never claim it is live manufacturer navigation.
+Owned paths: `frontend/`, frontend handover documentation and frontend tests. Suggested branch: `codex/frontend-qa`.
 
-## Factory implementation
-Pure functions: find_conflicts(candidate, reservations), evaluate_alerts(records, now), next_maintenance(completed, completed_at). Backend owns IDs and transactions. Maintenance and blocking lessons reserve equipment; all reservations must check overlaps in both directions. Due-only maintenance creates alerts without a reservation. Production rejects faulty/retired/maintenance assets. Emit equipment-unavailable alerts for existing affected jobs. Training instructions may be manually entered; AI lesson generation is optional.
+Do these in order:
 
-## Work order
-First 20 minutes: install/verify Playwright browser and one reachable support URL; agree interfaces. Hour 1: factory conflict and alert rules. Hour 2: collector plus real browser navigation. Hour 3: wire factory services and actual alarms. Hour 4: test dates, deduplication, recurrence, network failure. Hour 5: run full demo and prepare fallback fixtures.
+- [ ] Fix maintenance completion: send `completed_at` with an explicit UTC offset; verify the real API creates the next recurring task.
+- [ ] Remove automatic replay of failed live requests against mock data. Show a network error and retry; sample mode must be explicitly selected and visibly labelled.
+- [ ] Connect the existing repair form, screenshot upload and diagnostic import to real backend responses. Show provider failures and preserve saved cases after reload.
+- [ ] Build Desktop Assistance UI after agreeing the contract: selected app, goal, Start, progress, actual action trace, Stop, failure/retry and verified completion.
+- [ ] Distinguish screenshot advice from actions actually performed. Do not display synthetic action traces as live desktop activity.
+- [ ] Verify schedule conflict messages, lesson/production completion, alert acknowledgement and user-enabled sound once per new alert.
+- [ ] Check mobile layout, keyboard access, long AI text and Asia/Kolkata date display.
+- [ ] Run the frontend build and document real flow checks. Replace unsupported Verified claims in `docs/02_Frontend_Handover.md` with evidence or pending status.
 
-## Done criteria
-A real browser trace is visible, collector imports successfully, all three factory modules save and alert. Fake-clock tests cover due/overdue transitions without waiting a day. Overlap checks pass both creation orders and touching-boundary cases. Provide a 3-minute demo script with honest sample/live labels.
+Acceptance: a real maintenance completion succeeds; a disconnected backend cannot produce mock write success; desktop Stop/status render correctly; saved backend records survive reload; failures are actionable.
+
+## Teammate 2 — Backend, factory and integration QA
+
+Owned paths: `backend/app/api/`, `backend/app/models/`, `backend/app/db/`, `backend/app/jobs/`, `backend/app/core/`, `backend/app/main.py`, `backend/app/services/factory/`, `tests/backend/`, `tests/factory/`, shared config and backend documentation. Suggested branch: `codex/backend-qa`.
+
+Do these in order:
+
+- [ ] Verify merged real AI calls: ORM assets become plain records; diagnostic payload JSON is decoded; provider error codes reach failed jobs; failed analysis resets cases to open. Align backend environment/dependencies with Gemini/Ollama selection.
+- [ ] Persist job-to-case association and filter duplicate analyse requests by case. Test two simultaneous cases plus retry of the first.
+- [ ] Replace fake browser/automation success with an explicit unavailable error until actual execution exists. Keep fixtures explicitly labelled and separate from live jobs.
+- [ ] Validate offset-aware ISO dates and normalize UTC for collection, due dates, reservation windows and completion. Reject malformed/naive input with 422; alerts must remain usable.
+- [ ] Fix retained impact after replacement. Record reliable outcome chronology; exclude assets subsequently replaced/retired without relying only on case creation time.
+- [ ] Agree desktop session contract with Sambhav and Teammate 1, update `00_SRS.md`, then implement session IDs, job/status/trace persistence, Stop and provider failure handling around Sambhav's adapter.
+- [ ] Test factory conflicts in both creation orders, touching boundaries, blocking lessons and unavailable assets.
+- [ ] Verify recurring maintenance atomically, including duplicate/concurrent completion. Test alerts with an injectable clock, deduplication and acknowledgement persistence.
+- [ ] Verify restart recovery makes affected cases retryable; validate screenshot references, upload size/format and deletion cleanup.
+- [ ] Isolate test database/upload paths; run backend/AI tests and smoke checks with explicitly mocked offline providers plus real failure tests.
+- [ ] Maintain verified setup/reset instructions and coordinate final integration/demo with both others.
+
+Acceptance: concurrent cases use correct jobs; bad dates return 422; replaced assets stop counting; factory/alert data persists; desktop API/UI contract matches; no fake live success; checks and limitations are recorded.
+
+## Shared handoffs
+
+1. Teammate 2 publishes the desktop session contract; Sambhav supplies typed observer/selector/executor services; Teammate 1 builds against the agreed contract.
+2. First desktop proof is one selected Calculator control, actual input, independently verified display and working Stop.
+3. Rehearse together: repair assessment, actual desktop action, saved outcome, factory conflict/recurrence, alert acknowledgement and impact.
+4. Keep separate branches and small commits; integrate through main without force-pushing or changing another person's owned files without coordination.
+
+The previous four-person assignment is superseded. Existing scaffolding is not evidence that all acceptance checks pass. The original reviewed issues are listed in `docs/REMAINING_WORK.md`.

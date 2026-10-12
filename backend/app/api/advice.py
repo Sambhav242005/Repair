@@ -54,38 +54,15 @@ async def _execute_screenshot_advice(screenshot_id: str, question: str, job_id: 
         with open(screenshot.file_path, "rb") as f:
             image_bytes = f.read()
 
-        # Try calling Member 1's AI service if available
-        advice_dict = None
-        try:
-            from backend.app.services.ai.service import explain_screenshot  # type: ignore
-            res = await explain_screenshot(image_bytes=image_bytes, question=question)
-            advice_dict = res.model_dump()
-        except (ImportError, AttributeError, ModuleNotFoundError):
-            advice_dict = {
-                "observations": [
-                    "Detected system error dialog and high disk queue activity indicator.",
-                    "System tray reveals active background indexing process.",
-                ],
-                "suggested_actions": [
-                    {
-                        "instruction": "Click 'Resource Monitor' or 'System Monitor' in the visible settings panel.",
-                        "visible_label": "System Monitor",
-                    },
-                    {
-                        "instruction": "Examine if background indexing can be safely paused.",
-                        "visible_label": "Pause Indexing",
-                    },
-                ],
-                "limitations": [
-                    "Small background text below dialog title is unreadable; controls not fabricated.",
-                ],
-            }
+        from backend.app.services.ai.service import explain_screenshot
+        res = await explain_screenshot(image_bytes=image_bytes, question=question)
+        advice_dict = res.model_dump(mode="json")
 
         JobRegistry.mark_succeeded(job_id, advice_dict)
         return advice_dict
     except Exception as e:
         logger.exception(f"Screenshot advice job {job_id} failed: {e}")
-        JobRegistry.mark_failed(job_id, "INTERNAL_ERROR", str(e))
+        JobRegistry.mark_failed(job_id, getattr(e, "code", "INTERNAL_ERROR"), str(e))
         return None
     finally:
         db.close()
@@ -110,31 +87,15 @@ async def _execute_browser_run(asset_id: str, source_id: str, question: str, job
         return None
 
     try:
-        # Check if Member 4's Playwright runner is implemented
-        browser_result = None
-        try:
-            from backend.app.services.automation.service import run_browser  # type: ignore
-            res = await run_browser(asset_id=asset_id, source_id=source_id, question=question)
-            browser_result = res.model_dump()
-        except (ImportError, AttributeError, ModuleNotFoundError):
-            browser_result = {
-                "source_id": source.id,
-                "url": source.url,
-                "page_title": source.title,
-                "excerpt": f"Verified Manufacturer Documentation: Inspection procedures for {source.id}. Safe non-invasive procedures require power disconnect before chassis opening.",
-                "trace": [
-                    {"action": "navigate", "target": source.url, "status": "succeeded"},
-                    {"action": "extract_title", "target": "document.title", "status": "succeeded"},
-                    {"action": "extract_content", "target": "main article content", "status": "succeeded"},
-                ],
-                "advice": "Review Section 3 (Power Management & Diagnostic Beep Codes) before hardware disassembly.",
-            }
+        from backend.app.services.automation.service import run_browser
+        res = await run_browser(asset_id=asset_id, source_id=source_id, question=question)
+        browser_result = res.model_dump(mode="json")
 
         JobRegistry.mark_succeeded(job_id, browser_result)
         return browser_result
     except Exception as e:
         logger.exception(f"Browser run job {job_id} failed: {e}")
-        JobRegistry.mark_failed(job_id, "INTERNAL_ERROR", str(e))
+        JobRegistry.mark_failed(job_id, getattr(e, "code", "INTERNAL_ERROR"), str(e))
         return None
 
 @router.post("/browser-runs", response_model=JobIdResponse, status_code=status.HTTP_202_ACCEPTED)

@@ -1,0 +1,30 @@
+{
+  "sample_data": true,
+  "label": "Hand-authored sample: slow_laptop",
+  "result": {
+    "summary": "Reported slowdown and low free storage; measurements do not prove hardware failure.",
+    "hypotheses": [
+      {
+        "cause": "Storage pressure may contribute to slowdown.",
+        "likelihood": "medium",
+        "evidence": []
+      }
+    ],
+    "uncertainties": [
+      "No disk health or workload measurements supplied."
+    ],
+    "steps": [
+      {
+        "id": "step_1",
+        "instruction": "Read available disk space in the operating system storage settings.",
+        "expected_result": "Record free and total capacity without deleting data.",
+        "stop_condition": "Stop if settings are inaccessible or a hardware warning appears.",
+        "status": "pending"
+      }
+    ],
+    "recommendation": "troubleshoot",
+    "evidence": [],
+    "estimated_repair_cost_paise": null,
+    "cost_basis": null
+  }
+}

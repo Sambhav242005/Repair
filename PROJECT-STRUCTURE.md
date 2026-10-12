@@ -1,4 +1,6 @@
-# Repair Before Replace — Project Structure
+# Repair Before Replace â€” Project Structure
+
+> Current team plan: Sambhav plus two teammates. Follow [Sambhav â€” AI and Desktop](01_Sambhav_AI_Desktop.md), [Two teammate QA assignments](04_Factory_Automation_QA.md), and [remaining work](docs/REMAINING_WORK.md). The four-person ownership/workflow below is the original scaffold plan and is superseded by these assignments. The user selected native Windows computer use with Cloudflare Clef; the desktop contract still needs to be added to the SRS.
 
 This repository is organised for four people building the five-hour MVP described in [00_SRS.md](00_SRS.md). The folders are scaffolded; application code and dependency configuration still need to be implemented. `.gitkeep` files preserve empty folders in Git.
 
@@ -6,56 +8,56 @@ This repository is organised for four people building the five-hour MVP describe
 
 ```text
 Repair Before Replace/
-├── 00_SRS.md                         # Authoritative requirements and API contract
-├── 01_AI_Sambhav.md                  # Person 1 assignment
-├── 02_Frontend.md                    # Person 2 assignment
-├── 03_Backend.md                     # Person 3 assignment
-├── 04_Factory_Automation_QA.md        # Person 4 assignment
-├── PROJECT-STRUCTURE.md              # This guide
-├── frontend/
-│   └── src/
-│       ├── api/                     # Typed API client and job polling
-│       ├── components/              # Shared UI components
-│       ├── features/
-│       │   ├── assets/              # Asset list and editing
-│       │   ├── repair/              # Cases, analysis, steps and outcomes
-│       │   ├── computer-assistance/ # Screenshot, browser and diagnostics tabs
-│       │   ├── factory/             # Maintenance, training and production
-│       │   ├── alerts/              # Alert panel, acknowledgement and sound
-│       │   └── impact/              # Confirmed repairs and retained mass
-│       └── types/                   # TypeScript API types
-├── backend/
-│   └── app/
-│       ├── api/                     # All FastAPI HTTP routes
-│       ├── models/                  # Canonical Pydantic schemas
-│       ├── db/                      # SQLite persistence and transactions
-│       ├── jobs/                    # Background job execution and lifecycle
-│       └── services/
-│           ├── ai/                  # Provider, prompts and structured analysis
-│           ├── factory/             # Conflict rules, recurrence and alerts
-│           └── automation/          # Playwright browser adapter
-├── scripts/                         # Read-only diagnostic collector
-├── tests/
-│   ├── ai/
-│   ├── backend/
-│   ├── factory/
-│   └── automation/
-├── fixtures/
-│   ├── ai/
-│   ├── backend/
-│   ├── factory/
-│   └── automation/
-└── docs/                            # Setup, integration and demo documentation
+â”œâ”€â”€ 00_SRS.md                         # Authoritative requirements and API contract
+â”œâ”€â”€ 01_AI_Sambhav.md                  # Person 1 assignment
+â”œâ”€â”€ 02_Frontend.md                    # Person 2 assignment
+â”œâ”€â”€ 03_Backend.md                     # Person 3 assignment
+â”œâ”€â”€ 04_Factory_Automation_QA.md        # Person 4 assignment
+â”œâ”€â”€ PROJECT-STRUCTURE.md              # This guide
+â”œâ”€â”€ frontend/
+â”‚   â””â”€â”€ src/
+â”‚       â”œâ”€â”€ api/                     # Typed API client and job polling
+â”‚       â”œâ”€â”€ components/              # Shared UI components
+â”‚       â”œâ”€â”€ features/
+â”‚       â”‚   â”œâ”€â”€ assets/              # Asset list and editing
+â”‚       â”‚   â”œâ”€â”€ repair/              # Cases, analysis, steps and outcomes
+â”‚       â”‚   â”œâ”€â”€ computer-assistance/ # Screenshot, browser and diagnostics tabs
+â”‚       â”‚   â”œâ”€â”€ factory/             # Maintenance, training and production
+â”‚       â”‚   â”œâ”€â”€ alerts/              # Alert panel, acknowledgement and sound
+â”‚       â”‚   â””â”€â”€ impact/              # Confirmed repairs and retained mass
+â”‚       â””â”€â”€ types/                   # TypeScript API types
+â”œâ”€â”€ backend/
+â”‚   â””â”€â”€ app/
+â”‚       â”œâ”€â”€ api/                     # All FastAPI HTTP routes
+â”‚       â”œâ”€â”€ models/                  # Canonical Pydantic schemas
+â”‚       â”œâ”€â”€ db/                      # SQLite persistence and transactions
+â”‚       â”œâ”€â”€ jobs/                    # Background job execution and lifecycle
+â”‚       â””â”€â”€ services/
+â”‚           â”œâ”€â”€ ai/                  # Provider, prompts and structured analysis
+â”‚           â”œâ”€â”€ factory/             # Conflict rules, recurrence and alerts
+â”‚           â””â”€â”€ automation/          # Playwright browser adapter
+â”œâ”€â”€ scripts/                         # Read-only diagnostic collector
+â”œâ”€â”€ tests/
+â”‚   â”œâ”€â”€ ai/
+â”‚   â”œâ”€â”€ backend/
+â”‚   â”œâ”€â”€ factory/
+â”‚   â””â”€â”€ automation/
+â”œâ”€â”€ fixtures/
+â”‚   â”œâ”€â”€ ai/
+â”‚   â”œâ”€â”€ backend/
+â”‚   â”œâ”€â”€ factory/
+â”‚   â””â”€â”€ automation/
+â””â”€â”€ docs/                            # Setup, integration and demo documentation
 ```
 
 ## Ownership
 
 | Person | Owned paths | Responsibilities |
 |---|---|---|
-| 1 — Sambhav | `backend/app/services/ai/`, `tests/ai/`, `fixtures/ai/` | Gemini provider integration, repair assessment, screenshot advice and structured output validation. |
-| 2 — Frontend | `frontend/` | React + TypeScript + Vite screens, API client, job polling, factory forms, alerts and impact display. |
-| 3 — Backend and integration lead | `backend/app/api/`, `backend/app/models/`, `backend/app/db/`, `backend/app/jobs/`, future `backend/app/main.py`, `tests/backend/`, `fixtures/backend/` | HTTP contract, database writes, uploads, jobs, seed/reset, impact calculation and integration. |
-| 4 — Factory, automation and QA | `backend/app/services/factory/`, `backend/app/services/automation/`, `scripts/`, corresponding tests and fixtures | Scheduling rules, alert evaluation, browser execution, diagnostic collector and demo acceptance checks. |
+| 1 â€” Sambhav | `backend/app/services/ai/`, `tests/ai/`, `fixtures/ai/` | Gemini provider integration, repair assessment, screenshot advice and structured output validation. |
+| 2 â€” Frontend | `frontend/` | React + TypeScript + Vite screens, API client, job polling, factory forms, alerts and impact display. |
+| 3 â€” Backend and integration lead | `backend/app/api/`, `backend/app/models/`, `backend/app/db/`, `backend/app/jobs/`, future `backend/app/main.py`, `tests/backend/`, `fixtures/backend/` | HTTP contract, database writes, uploads, jobs, seed/reset, impact calculation and integration. |
+| 4 â€” Factory, automation and QA | `backend/app/services/factory/`, `backend/app/services/automation/`, `scripts/`, corresponding tests and fixtures | Scheduling rules, alert evaluation, browser execution, diagnostic collector and demo acceptance checks. |
 
 The backend lead coordinates shared root configuration and documentation. Each member supplies their own dependency and environment requirements. Coordinate before changing another member's files.
 

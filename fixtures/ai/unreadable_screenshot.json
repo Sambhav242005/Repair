@@ -1,0 +1,46 @@
+{
+  "sample_data": true,
+  "label": "Hand-authored sample: unreadable_screenshot",
+  "result": {
+    "analysis": {
+      "summary": "Screenshot is unreadable; a cause cannot be established.",
+      "hypotheses": [
+        {
+          "cause": "Insufficient readable information.",
+          "likelihood": "low",
+          "evidence": []
+        }
+      ],
+      "uncertainties": [
+        "Controls and error text cannot be read."
+      ],
+      "steps": [
+        {
+          "id": "step_1",
+          "instruction": "Provide a clearer screenshot with private information hidden.",
+          "expected_result": "Readable error text and surrounding context.",
+          "stop_condition": "Do not act on unreadable controls.",
+          "status": "pending"
+        }
+      ],
+      "recommendation": "insufficient_evidence",
+      "evidence": [],
+      "estimated_repair_cost_paise": null,
+      "cost_basis": null
+    },
+    "screenshot_advice": {
+      "observations": [
+        "Image text and controls are unreadable."
+      ],
+      "suggested_actions": [
+        {
+          "instruction": "Upload a clearer screenshot with private information hidden.",
+          "visible_label": null
+        }
+      ],
+      "limitations": [
+        "Cannot identify controls or infer a fault from this image."
+      ]
+    }
+  }
+}

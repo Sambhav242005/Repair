@@ -1,5 +1,7 @@
 # Member 2 — Frontend and User Experience
 
+> Superseded: use [Person 2 — App Integration and QA](02_App_Integration_QA.md). This original four-person assignment is historical. See [remaining work](docs/REMAINING_WORK.md).
+
 ## Shared contract
 Read `00_SRS.md` before coding. Its schemas, routes and enums are authoritative. Changes must be agreed by frontend and backend owners and updated there before implementation. Target: five hours, four members.
 
