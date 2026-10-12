@@ -179,17 +179,9 @@ export const CaseView: React.FC<CaseViewProps> = ({
 
       {/* Hero Guide Title & Meta */}
       <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: '20px',
-          borderBottom: '2px solid #f1f5f9',
-          paddingBottom: '20px',
-          marginBottom: '24px',
-        }}
+        className="case-guide-header"
       >
-        <div>
+        <div className="case-guide-copy">
           <h1
             style={{
               fontSize: '26px',
@@ -208,20 +200,8 @@ export const CaseView: React.FC<CaseViewProps> = ({
 
         <button
           id="btn-delete-case"
+          className="case-guide-delete"
           onClick={() => onDeleteCase(currentCase.id)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: 600,
-            color: '#dc2626',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            flexShrink: 0,
-          }}
           title="Delete this repair case"
         >
           <Trash2 size={14} />

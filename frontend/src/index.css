@@ -534,6 +534,15 @@ input::placeholder, textarea::placeholder {
 .case-evidence-summary span { color: #7b857c; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
 .case-evidence-summary strong { margin-top: 3px; color: #344b3b; font-size: 13px; text-transform: capitalize; }
 .case-evidence-summary p { grid-column: 1 / -1; color: #727d74; font-size: 10px; }
+.case-guide-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 24px; }
+.case-guide-copy { flex: 1 1 auto; min-width: 0; }
+.case-guide-copy h1 { overflow-wrap: anywhere; }
+.case-guide-delete { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; padding: 8px 12px; border: 1px solid #fecaca; border-radius: 6px; color: #dc2626; background: #fef2f2; font-size: 12px; font-weight: 600; }
+@media (max-width: 600px) {
+  .case-guide-header { flex-wrap: wrap; }
+  .case-guide-copy { flex-basis: 100%; }
+  .case-guide-delete { margin-left: auto; }
+}
 @media (max-width: 800px) {
   .support-heading { align-items: flex-start; flex-direction: column; }
   .support-tabs { width: 100%; }
