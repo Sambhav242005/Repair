@@ -182,6 +182,7 @@ def analyse_case(case_id: str, db: Session = Depends(get_db)):
             db.query(JobModel)
             .filter(
                 JobModel.kind == "case_analysis",
+                JobModel.entity_id == case_id,
                 JobModel.status.in_(["queued", "running"]),
             )
             .order_by(JobModel.created_at.desc())
@@ -190,7 +191,7 @@ def analyse_case(case_id: str, db: Session = Depends(get_db)):
         if active_job:
             return JobIdResponse(job_id=active_job.id)
 
-    job = JobRegistry.create_job(kind="case_analysis", db=db)
+    job = JobRegistry.create_job(kind="case_analysis", db=db, entity_id=case_id)
     model.status = "analysing"
     db.commit()
 
