@@ -239,7 +239,7 @@ export interface Alert {
   acknowledged_at: string | null;
 }
 
-export type JobKind = 'case_analysis' | 'screenshot_analysis' | 'browser_run';
+export type JobKind = 'case_analysis' | 'screenshot_analysis' | 'browser_run' | 'desktop_run';
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 
 export interface JobError {
@@ -274,6 +274,34 @@ export interface BrowserResult {
   excerpt: string;
   trace: BrowserTraceItem[];
   advice: string | null;
+}
+
+// --- Native Desktop Session Types (Clef + UI Automation) ---
+export type DesktopAppId = 'calculator' | 'settings' | 'taskmgr';
+export type DesktopSessionStatus = 'idle' | 'running' | 'stopped' | 'completed' | 'failed';
+
+export interface DesktopTraceStep {
+  step_number: number;
+  timestamp: string;
+  control_name: string;
+  control_type: string;
+  action: 'invoke' | 'focus' | 'type_text' | 'verify';
+  value?: string | null;
+  verified_state?: string | null;
+  status: 'succeeded' | 'failed' | 'stopped';
+}
+
+export interface DesktopSession {
+  id: string;
+  app_id: DesktopAppId;
+  app_title: string;
+  goal: string;
+  status: DesktopSessionStatus;
+  started_at: string;
+  stopped_at?: string | null;
+  steps: DesktopTraceStep[];
+  verified_result?: string | null;
+  error?: string | null;
 }
 
 export interface ImpactSummary {

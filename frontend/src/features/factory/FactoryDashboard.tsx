@@ -78,7 +78,7 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
   // Complete Actions
   const handleCompleteMaintenance = async (id: string) => {
     try {
-      const res = await apiClient.completeMaintenance(id);
+      await apiClient.completeMaintenance(id, new Date().toISOString());
       await fetchAll();
       onRefreshImpact();
     } catch (err: any) {
