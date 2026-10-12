@@ -476,17 +476,30 @@ input::placeholder, textarea::placeholder {
 .session-message { margin-bottom: 12px; color: #59675c; font-size: 12px; line-height: 1.55; }
 .approval-card { padding: 12px; border: 1px solid #e5dcc6; border-radius: 10px; background: #fffaf0; }
 .approval-card h4 { margin-bottom: 5px; color: #644d27; font-size: 12px; }
-.approval-card p { color: #75613c; font-size: 11px; }
-.approval-card pre, .debug-details pre { max-height: 140px; overflow: auto; margin: 9px 0; padding: 9px; border-radius: 7px; background: #f3f2ec; color: #424c43; font: 10px/1.45 var(--font-mono); white-space: pre-wrap; word-break: break-word; }
+.approval-card p { color: #75613c; font-size: 11px; line-height: 1.5; }
+.approval-card .approval-note { margin-top: 7px; color: #81795f; }
 .approval-actions { display: flex; flex-wrap: wrap; gap: 7px; }
 .approval-actions button, .session-card > .btn-danger { padding: 8px 11px; font-size: 11px; }
 .verified-result { display: flex; align-items: center; gap: 5px; margin: 9px 0; color: #34714d; font-size: 11px; }
-.session-error { color: #a54135; font-size: 11px; }
-.debug-details { margin-top: 13px; border-top: 1px solid #e8e9e2; padding-top: 10px; }
-.debug-details summary { cursor: pointer; color: #53675a; font-size: 11px; font-weight: 700; }
-.debug-details ol { display: flex; flex-direction: column; gap: 8px; margin: 9px 0 0; padding-left: 22px; }
-.debug-details li { color: #57645a; font-size: 10px; }
-.debug-details li time { margin-left: 8px; color: #899188; }
+.workflow-activity { margin-top: 14px; border-top: 1px solid #e8e9e2; padding-top: 12px; }
+.workflow-activity h4 { margin-bottom: 9px; color: #425548; font-size: 11px; }
+.workflow-activity ol { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.workflow-activity li { display: grid; grid-template-columns: 23px minmax(0, 1fr) auto; align-items: start; gap: 8px; color: #536156; }
+.activity-marker { display: grid; width: 21px; height: 21px; place-items: center; border-radius: 50%; color: #397250; background: #e8f2e8; font-size: 12px; font-weight: 800; line-height: 1; }
+.activity-pending .activity-marker { color: #806127; background: #f7efd9; }
+.activity-error .activity-marker { color: #a54135; background: #fbe9e6; }
+.workflow-activity li strong { display: block; color: #3d4c41; font-size: 10px; line-height: 1.4; }
+.workflow-activity li p { margin-top: 2px; color: #758078; font-size: 10px; line-height: 1.45; }
+.workflow-activity li time { padding-top: 2px; color: #899188; font-size: 9px; white-space: nowrap; }
+.desktop-error-panel { margin-top: 13px; padding: 12px; border: 1px solid #e9c7c1; border-radius: 10px; background: #fff5f3; color: #743e37; }
+.desktop-error-panel > div { display: flex; align-items: flex-start; gap: 9px; }
+.desktop-error-icon { display: grid; flex: 0 0 21px; width: 21px; height: 21px; place-items: center; border-radius: 50%; color: #a54135; background: #fbe2de; font-size: 12px; font-weight: 900; }
+.desktop-error-panel h4 { margin: 1px 0 4px; color: #873d34; font-size: 11px; }
+.desktop-error-panel p { color: #754b45; font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+.desktop-error-details { margin: 10px 0 0 30px; border-top: 1px solid #f0d8d4; padding-top: 8px; }
+.desktop-error-details summary { width: fit-content; min-height: 24px; cursor: pointer; color: #80534d; font-size: 10px; font-weight: 700; }
+.desktop-error-details summary:focus-visible { outline: 2px solid #9f473d; outline-offset: 2px; border-radius: 3px; }
+.desktop-error-details pre { max-height: 180px; overflow: auto; margin: 8px 0 0; padding: 10px; border: 1px solid #edd7d3; border-radius: 7px; background: #fff; color: #563f3a; font: 10px/1.5 var(--font-mono); white-space: pre-wrap; word-break: break-word; }
 .screen-form { max-width: 640px; }
 .screen-form input[type=file], .import-form input[type=file] { padding: 7px; font-size: 11px; }
 .advice-card { padding: 16px; border: 1px solid #e4e7dd; border-radius: 11px; color: #536156; background: #fafbf7; font-size: 12px; }

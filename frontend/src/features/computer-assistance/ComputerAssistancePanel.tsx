@@ -4,6 +4,7 @@ import { Activity, Check, CircleStop, Computer, FileText, Image, RefreshCw, Shie
 import { apiClient } from '../../api/client';
 import { pollJob } from '../../api/polling';
 import { formatBytes, formatKolkata } from '../../utils/datetime';
+import { buildDesktopActivity, describeProposedAction, hasDesktopSessionError } from './desktopActivity';
 
 interface Props {
   assets: Asset[];
@@ -30,6 +31,8 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
   const [question, setQuestion] = useState('What should I check on this screen?');
 
   const selectedWindow = windows.find((item) => `${item.handle}:${item.process_id}` === windowKey);
+  const desktopActivity = session ? buildDesktopActivity(session.debug_events, session.status) : [];
+  const desktopHasError = session ? hasDesktopSessionError(session) : false;
 
   const refreshWindows = async () => {
     if (!liveMode) return;
@@ -163,6 +166,7 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
             <label>What should the computer do?
               <textarea rows={2} maxLength={500} value={goal} onChange={(event) => setGoal(event.target.value)} required placeholder="Describe the task in plain language" />
             </label>
+            <p className="field-hint">Only supported apps open on this PC appear here. Calculator allows digit entry and basic buttons; Settings and Task Manager allow read-only navigation. Typing words into apps is not enabled.</p>
             <div className="support-two-fields">
               <label>Expected result control ID
                 <input value={automationId} onChange={(event) => setAutomationId(event.target.value)} maxLength={200} required />
@@ -174,17 +178,27 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
             <p className="field-hint">The exact result is your success check. For Calculator, use the result display’s UI Automation ID and the value you expect.</p>
             <button className="btn-primary" type="submit" disabled={loading || !selectedWindow}><Sparkles size={16} />{loading ? 'Inspecting the app…' : 'Inspect and prepare a plan'}</button>
           </form>
-          <div className="session-card" aria-live="polite">
+          <div className="session-card">
             <div className="session-title"><h3>{session ? session.app_title : 'Workflow review'}</h3>{session && <span className={`session-status status-${session.status}`}>{session.status.replace('_', ' ')}</span>}</div>
-            {!session ? <p className="muted-copy">Choose an open app and describe a small task. You’ll see the proposed step and debug details here before any input is sent.</p> : <>
-              <p className="session-message">{session.message}</p>
-              {session.status === 'needs_approval' && <div className="approval-card"><h4>Review proposed computer action</h4><p>{String(session.proposed_action?.expected_effect || session.proposed_action?.operation || 'Action details are in the debug record.')}</p><pre>{JSON.stringify(session.proposed_action, null, 2)}</pre><div className="approval-actions"><button className="btn-primary" disabled={loading} onClick={approve}><Check size={16} /> Approve this action</button><button className="btn-secondary" disabled={loading} onClick={stop}><CircleStop size={16} /> Stop</button></div></div>}
+            {!session ? <p className="muted-copy">Choose an open app and describe a small task. You’ll see a clear summary of the proposed step before allowing any input.</p> : <>
+              <p className="session-message" role="status" aria-live="polite">{session.message}</p>
+              {session.status === 'needs_approval' && <div className="approval-card"><h4>Review proposed computer action</h4><p>{describeProposedAction(session.proposed_action)}</p><p className="approval-note">No computer input has been sent. Approving allows this one reviewed step to run.</p><div className="approval-actions"><button className="btn-primary" disabled={loading} onClick={approve}><Check size={16} /> Approve this action</button><button className="btn-secondary" disabled={loading} onClick={stop}><CircleStop size={16} /> Stop</button></div></div>}
               {session.status === 'running' && <button className="btn-danger" disabled={loading} onClick={stop}><CircleStop size={16} /> Request stop</button>}
               {session.verified_result && <div className="verified-result"><Check size={16} /> Verified visible result: <strong>{session.verified_result}</strong></div>}
-              {session.error && <p className="session-error">{session.error}</p>}
-              <details className="debug-details"><summary>Decision trace &amp; debug details ({session.debug_events.length})</summary>
-                {session.debug_events.length ? <ol>{session.debug_events.map((event, index) => <li key={`${event.at}-${index}`}><strong>{event.event}</strong><time>{formatKolkata(event.at)}</time><pre>{JSON.stringify(event.data ?? event, null, 2)}</pre></li>)}</ol> : <p className="muted-copy">No debug events have been recorded yet.</p>}
-              </details>
+              {desktopActivity.length > 0 && <section className="workflow-activity" aria-label="Workflow progress">
+                <h4>What happened</h4>
+                <ol>{desktopActivity.map((item, index) => <li className={`activity-${item.tone}`} key={`${item.event}-${index}`}>
+                  <span className="activity-marker" aria-hidden="true">{item.tone === 'error' ? '!' : item.tone === 'pending' ? '…' : '✓'}</span>
+                  <div><strong>{item.title}</strong><p>{item.description}</p></div>
+                  <time dateTime={item.at}>{formatKolkata(item.at)}</time>
+                </li>)}</ol>
+              </section>}
+              {desktopHasError && <section className="desktop-error-panel" role="alert" aria-labelledby="desktop-error-title">
+                <div><span className="desktop-error-icon" aria-hidden="true">!</span><div><h4 id="desktop-error-title">The computer task stopped</h4><p>{session.error || session.message || 'The task could not be completed. Review the details and try again.'}</p></div></div>
+                {session.debug_events.length > 0 && <details className="desktop-error-details"><summary>Technical details (JSON)</summary>
+                  <pre>{JSON.stringify({ status: session.status, stage: session.stage, error: session.error, events: session.debug_events }, null, 2)}</pre>
+                </details>}
+              </section>}
             </>}
           </div>
         </div>}
