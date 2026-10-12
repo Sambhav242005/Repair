@@ -20,7 +20,7 @@ Install backend dependencies into a Python environment, then from the project ro
 python -m companion.server
 ```
 
-Or use `scripts/start_companion.ps1` on Windows or `bash scripts/start_companion.sh` on Mac. Keep its terminal open. It prints a new pairing code on every startup. Open **Local laptop companion** in Cases & troubleshooting and paste that code. The code stays in page memory; reloading requires pairing again. Closing the companion stops local access. See [Mac teammate setup](MAC_TEAMMATE_SETUP.md) for the complete Mac instructions.
+Or use `.\scripts\start_companion.cmd` on Windows or `bash scripts/start_companion.sh` on Mac. The Windows CMD launcher works when PowerShell scripts are disabled, without changing execution policy. It uses the project's virtual environment, the bundled Codex Python if present, or Python on PATH. Keep its terminal open. It prints a new pairing code on every startup. Open **Local laptop companion** in Cases & troubleshooting and paste that code. The code stays in page memory; reloading requires pairing again. Closing the companion stops local access. See [Mac teammate setup](MAC_TEAMMATE_SETUP.md) for the complete Mac instructions.
 
 You can also open the companion's local pairing page from the interface to copy the code. That page is restricted to a top-level local page and cannot be embedded or fetched by a website.
 
