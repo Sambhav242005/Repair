@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Asset, CreateCaseInput } from '../../types';
-import { Upload, FileText, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Send, CheckCircle2 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 
 interface RepairCaseFormProps {
@@ -25,7 +25,6 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
   const [uploading, setUploading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Sync if selectedAssetId changes from parent
   React.useEffect(() => {
     if (selectedAssetId) {
       setAssetId(selectedAssetId);
@@ -37,7 +36,7 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      onError({ error: { code: 'VALIDATION_ERROR', message: 'Screenshot exceeds 5 MB limit (00_SRS.md nonfunctional requirement).' } });
+      onError({ error: { code: 'VALIDATION_ERROR', message: 'Screenshot exceeds 5 MB limit (00_SRS.md rule).' } });
       return;
     }
 
@@ -138,30 +137,41 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
   };
 
   return (
-    <div className="card" id="repair-case-form-card" style={{ height: 'fit-content' }}>
-      <div style={{ marginBottom: '18px' }}>
-        <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-bright)' }}>
-          Create Repair Investigation
+    <div
+      className="card"
+      id="repair-case-form-card"
+      style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: '12px',
+        padding: '24px',
+        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+      }}
+    >
+      <div style={{ marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+        <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>
+          Open a Repair Investigation
         </h2>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-          Document equipment symptoms and attach diagnostic telemetry or screenshot guidance.
+        <p style={{ fontSize: '13px', color: '#64748b' }}>
+          Document equipment symptoms to generate a step-by-step iFixit guide.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {/* Asset Selection */}
         <div>
-          <label htmlFor="select-case-asset" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
-            Target Asset / Workstation *
+          <label htmlFor="select-case-asset" style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px' }}>
+            Target Equipment / Device *
           </label>
           <select
             id="select-case-asset"
             value={assetId}
             onChange={(e) => setAssetId(e.target.value)}
             required
+            style={{ fontWeight: 600 }}
           >
             {assets.map((a) => (
-              <option key={a.id} value={a.id} style={{ background: '#0b101c' }}>
+              <option key={a.id} value={a.id}>
                 {a.name} ({a.category}) — [{a.status}]
               </option>
             ))}
@@ -170,8 +180,8 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
 
         {/* Symptoms Textarea */}
         <div>
-          <label htmlFor="textarea-symptoms" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
-            Observed Symptoms &amp; Fault Description *
+          <label htmlFor="textarea-symptoms" style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px' }}>
+            Fault Symptoms &amp; Observed Behavior *
           </label>
           <textarea
             id="textarea-symptoms"
@@ -179,30 +189,31 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
             required
             value={symptoms}
             onChange={(e) => setSymptoms(e.target.value)}
-            placeholder="Describe the fault symptoms, e.g., 'Laptop is slow and storage is almost full', 'Hydraulic spindle thermal alarm tripped during cycle #4'..."
+            placeholder="e.g. 'Laptop fan makes loud rattling noise and CPU throttles under load', 'Spindle vibration alert during cycle #3'..."
+            style={{ lineHeight: 1.5 }}
           />
         </div>
 
-        {/* Diagnostic JSON Attachment */}
+        {/* Diagnostic Attachment */}
         <div
           style={{
-            background: 'rgba(255, 255, 255, 0.02)',
-            border: '1px dashed var(--border-medium)',
-            borderRadius: 'var(--radius-md)',
+            background: '#f8fafc',
+            border: '1px dashed #cbd5e1',
+            borderRadius: '8px',
             padding: '14px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FileText size={15} color="#38bdf8" /> Attach Diagnostic JSON (Max 100 KB)
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FileText size={15} color="#0071ce" /> PC Diagnostic Telemetry (.json)
             </span>
             <button
               type="button"
               id="btn-use-sample-diag"
               onClick={loadSampleDiagnostics}
-              style={{ fontSize: '11px', color: 'var(--brand-cyan)', fontWeight: 600 }}
+              style={{ fontSize: '11px', color: '#0071ce', fontWeight: 700 }}
             >
-              + Use Sample Telemetry
+              + Use Sample Data
             </button>
           </div>
 
@@ -215,8 +226,8 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
           />
 
           {uploadedDiagnosticId && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#34d399', marginTop: '8px' }}>
-              <CheckCircle2 size={14} /> Attached Diagnostic ID: <code style={{ fontFamily: 'var(--font-mono)' }}>{uploadedDiagnosticId}</code>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#059669', marginTop: '8px', fontWeight: 600 }}>
+              <CheckCircle2 size={14} /> Attached Diagnostic ID: {uploadedDiagnosticId}
             </div>
           )}
         </div>
@@ -224,15 +235,15 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
         {/* Screenshot Attachment */}
         <div
           style={{
-            background: 'rgba(255, 255, 255, 0.02)',
-            border: '1px dashed var(--border-medium)',
-            borderRadius: 'var(--radius-md)',
+            background: '#f8fafc',
+            border: '1px dashed #cbd5e1',
+            borderRadius: '8px',
             padding: '14px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Upload size={15} color="#f59e0b" /> Attach Screenshot (Max 5 MB)
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Upload size={15} color="#f59e0b" /> Visual Screenshot (.png / .jpeg)
             </span>
           </div>
 
@@ -245,8 +256,8 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
           />
 
           {uploadedScreenshotId && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#34d399', marginTop: '8px' }}>
-              <CheckCircle2 size={14} /> Uploaded Screenshot ID: <code style={{ fontFamily: 'var(--font-mono)' }}>{uploadedScreenshotId}</code>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#059669', marginTop: '8px', fontWeight: 600 }}>
+              <CheckCircle2 size={14} /> Attached Screenshot ID: {uploadedScreenshotId}
             </div>
           )}
         </div>
@@ -257,15 +268,13 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
           type="submit"
           disabled={submitting || uploading}
           className="btn-primary"
-          style={{ width: '100%', padding: '12px' }}
+          style={{ width: '100%', padding: '13px', fontSize: '15px' }}
         >
           {submitting ? (
-            <>
-              <div className="spinner" /> Creating Case...
-            </>
+            'Opening Case...'
           ) : (
             <>
-              <Send size={16} /> Open Repair Case
+              <Send size={16} /> Open Investigation
             </>
           )}
         </button>

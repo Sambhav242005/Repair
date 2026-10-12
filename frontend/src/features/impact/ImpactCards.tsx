@@ -1,6 +1,6 @@
 import React from 'react';
 import { ImpactSummary } from '../../types';
-import { ShieldCheck, Scale, AlertCircle, Info } from 'lucide-react';
+import { ShieldCheck, Scale, AlertCircle, Info, Award } from 'lucide-react';
 
 interface ImpactCardsProps {
   impact: ImpactSummary | null;
@@ -9,7 +9,7 @@ interface ImpactCardsProps {
 
 export const ImpactCards: React.FC<ImpactCardsProps> = ({ impact, loading }) => {
   return (
-    <div id="impact-section" style={{ marginBottom: '24px' }}>
+    <div id="impact-section" style={{ marginBottom: '28px' }}>
       <div
         style={{
           display: 'grid',
@@ -22,37 +22,42 @@ export const ImpactCards: React.FC<ImpactCardsProps> = ({ impact, loading }) => 
           className="card"
           id="impact-card-repairs"
           style={{
-            position: 'relative',
-            overflow: 'hidden',
-            borderLeft: '4px solid #10b981',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderTop: '4px solid #10b981',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Verified Outcome
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Confirmed Reuse
             </span>
-            <ShieldCheck size={20} color="#10b981" />
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ShieldCheck size={18} color="#059669" />
+            </div>
           </div>
 
           <div style={{ margin: '14px 0 8px' }}>
             <div
               id="stat-confirmed-repairs"
               style={{
-                fontSize: '32px',
+                fontSize: '34px',
                 fontWeight: 800,
-                color: 'var(--text-bright)',
+                color: '#0f172a',
                 lineHeight: 1.1,
               }}
             >
               {loading ? '...' : impact ? impact.confirmed_repairs : '0'}
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Confirmed Repaired Assets
+            <p style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginTop: '4px' }}>
+              Confirmed Repaired Equipment
             </p>
           </div>
 
-          <div style={{ fontSize: '11px', color: 'var(--text-dim)', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-            Strictly counts distinct devices with recorded outcome = <code>repaired</code>. Excludes retired units.
+          <div style={{ fontSize: '12px', color: '#64748b', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+            Unique machines and PCs with completed physical repairs, excluding retired equipment.
           </div>
         </div>
 
@@ -61,100 +66,88 @@ export const ImpactCards: React.FC<ImpactCardsProps> = ({ impact, loading }) => 
           className="card"
           id="impact-card-mass"
           style={{
-            position: 'relative',
-            overflow: 'hidden',
-            borderLeft: '4px solid #0ea5e9',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderTop: '4px solid #0071ce',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#0071ce', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Material Retention
             </span>
-            <Scale size={20} color="#0ea5e9" />
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#ebf5ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Scale size={18} color="#0071ce" />
+            </div>
           </div>
 
           <div style={{ margin: '14px 0 8px' }}>
             <div
               id="stat-retained-mass"
               style={{
-                fontSize: '32px',
+                fontSize: '34px',
                 fontWeight: 800,
-                color: 'var(--text-bright)',
+                color: '#0f172a',
                 lineHeight: 1.1,
               }}
             >
               {loading ? '...' : impact ? `${impact.estimated_retained_mass_kg} kg` : '0 kg'}
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Estimated Device Mass Retained in Use
+            <p style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginTop: '4px' }}>
+              Estimated Hardware Retained in Use
             </p>
           </div>
 
-          <div style={{ fontSize: '11px', color: 'var(--text-dim)', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-            Sum of physical hardware weight preserved before premature replacement.
+          <div style={{ fontSize: '12px', color: '#64748b', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+            Physical hardware preserved in active service before premature retirement.
           </div>
         </div>
 
         {/* Card 3: Missing Mass & Data Integrity */}
         <div
           className="card"
-          id="impact-card-missing-mass"
+          id="impact-card-integrity"
           style={{
-            position: 'relative',
-            overflow: 'hidden',
-            borderLeft: '4px solid #f59e0b',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderTop: '4px solid #f59e0b',
+            borderRadius: '12px',
+            padding: '20px',
+            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Data Integrity
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Strict Accounting
             </span>
-            <AlertCircle size={20} color="#f59e0b" />
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Info size={18} color="#d97706" />
+            </div>
           </div>
 
           <div style={{ margin: '14px 0 8px' }}>
             <div
               id="stat-missing-mass"
               style={{
-                fontSize: '32px',
+                fontSize: '34px',
                 fontWeight: 800,
-                color: 'var(--text-bright)',
+                color: '#0f172a',
                 lineHeight: 1.1,
               }}
             >
               {loading ? '...' : impact ? impact.assets_missing_mass : '0'}
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Assets Missing Verified Mass (kg)
+            <p style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginTop: '4px' }}>
+              Repaired Units Without Known Mass
             </p>
           </div>
 
-          <div style={{ fontSize: '11px', color: 'var(--text-dim)', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-            Contributes zero kg to retained mass rather than estimating or inventing figures.
+          <div style={{ fontSize: '12px', color: '#64748b', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+            No fabricated estimates: unknown device weights contribute 0 kg to avoid speculative inflation.
           </div>
         </div>
-      </div>
-
-      {/* Methodology and Assumptions notice */}
-      <div
-        id="impact-methodology-card"
-        style={{
-          marginTop: '12px',
-          padding: '12px 18px',
-          background: 'rgba(255, 255, 255, 0.02)',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          fontSize: '12px',
-          color: 'var(--text-muted)',
-        }}
-      >
-        <Info size={16} color="#60a5fa" style={{ flexShrink: 0 }} />
-        <span>
-          <strong>Accounting Methodology:</strong> {impact?.methodology || 'Confirmed repairs reflect unique assets with verified repairs. No carbon reduction or carbon credits are asserted without accredited supplier lifecycle factors.'}
-        </span>
       </div>
     </div>
   );

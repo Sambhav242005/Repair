@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Asset, AssetStatus, CreateAssetInput, UpdateAssetInput } from '../../types';
-import { Plus, Edit2, Laptop, Settings, ShieldAlert, Cpu } from 'lucide-react';
+import { Plus, Edit2, Laptop, Settings, Cpu, HardDrive } from 'lucide-react';
 
 interface AssetListProps {
   assets: Asset[];
@@ -23,43 +23,55 @@ export const AssetList: React.FC<AssetListProps> = ({
   const getCategoryIcon = (category: Asset['category']) => {
     switch (category) {
       case 'computer':
-        return <Laptop size={18} color="#38bdf8" />;
+        return <Laptop size={18} color="#0071ce" />;
       case 'factory_machine':
         return <Settings size={18} color="#f59e0b" />;
       default:
-        return <Cpu size={18} color="#a855f7" />;
+        return <Cpu size={18} color="#8b5cf6" />;
     }
   };
 
   const getStatusBadge = (status: AssetStatus) => {
     switch (status) {
       case 'operational':
-        return <span className="badge badge-operational">● Operational</span>;
+        return <span className="badge badge-operational">Operational</span>;
       case 'maintenance':
-        return <span className="badge badge-maintenance">▲ In Maintenance</span>;
+        return <span className="badge badge-maintenance">In Maintenance</span>;
       case 'faulty':
-        return <span className="badge badge-faulty">✖ Faulty</span>;
+        return <span className="badge badge-faulty">Faulty</span>;
       case 'retired':
-        return <span className="badge badge-retired">○ Retired</span>;
+        return <span className="badge badge-retired">Retired</span>;
     }
   };
 
   return (
-    <div className="card" id="asset-list-panel" style={{ padding: '20px' }}>
+    <div
+      className="card"
+      id="asset-list-panel"
+      style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: '12px',
+        padding: '20px',
+        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+      }}
+    >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: '16px',
+          borderBottom: '1px solid #f1f5f9',
+          paddingBottom: '12px',
         }}
       >
         <div>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-bright)' }}>
-            Tracked Equipment &amp; Assets
+          <h2 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+            Equipment & Device Fleet
           </h2>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            {assets.length} active registered machines &amp; workstations
+          <p style={{ fontSize: '12px', color: '#64748b' }}>
+            {assets.length} registered workstations & machines
           </p>
         </div>
         <button
@@ -68,14 +80,24 @@ export const AssetList: React.FC<AssetListProps> = ({
             setEditingAsset(null);
             setIsModalOpen(true);
           }}
-          className="btn-secondary"
-          style={{ fontSize: '12px', padding: '6px 12px' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '12px',
+            fontWeight: 700,
+            color: '#0071ce',
+            backgroundColor: '#ebf5ff',
+            border: '1px solid #b9e1ff',
+            padding: '6px 12px',
+            borderRadius: '6px',
+          }}
         >
-          <Plus size={14} /> Add Asset
+          <Plus size={14} /> Add Device
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {assets.map((asset) => {
           const isSelected = asset.id === selectedAssetId;
           return (
@@ -84,9 +106,9 @@ export const AssetList: React.FC<AssetListProps> = ({
               id={`asset-item-${asset.id}`}
               onClick={() => onSelectAsset(asset)}
               style={{
-                backgroundColor: isSelected ? 'rgba(14, 165, 233, 0.12)' : 'rgba(255, 255, 255, 0.02)',
-                border: `1px solid ${isSelected ? 'var(--brand-cyan)' : 'var(--border-subtle)'}`,
-                borderRadius: 'var(--radius-md)',
+                backgroundColor: isSelected ? '#ebf5ff' : '#ffffff',
+                border: `1.5px solid ${isSelected ? '#0071ce' : '#e2e8f0'}`,
+                borderRadius: '8px',
                 padding: '12px 14px',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
@@ -96,10 +118,11 @@ export const AssetList: React.FC<AssetListProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div
                     style={{
-                      width: '32px',
-                      height: '32px',
+                      width: '34px',
+                      height: '34px',
                       borderRadius: '8px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      backgroundColor: isSelected ? '#ffffff' : '#f1f5f9',
+                      border: '1px solid #e2e8f0',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -108,11 +131,11 @@ export const AssetList: React.FC<AssetListProps> = ({
                     {getCategoryIcon(asset.category)}
                   </div>
                   <div>
-                    <strong style={{ fontSize: '14px', color: 'var(--text-bright)' }}>
+                    <strong style={{ fontSize: '14px', color: isSelected ? '#0071ce' : '#0f172a' }}>
                       {asset.name}
                     </strong>
-                    <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '2px' }}>
-                      {asset.manufacturer || 'Unknown Mfr'} • {asset.model || 'Standard Unit'}
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                      {asset.manufacturer || 'Standard'} • {asset.model || 'OEM'}
                     </div>
                   </div>
                 </div>
@@ -128,7 +151,7 @@ export const AssetList: React.FC<AssetListProps> = ({
                     }}
                     style={{
                       padding: '4px',
-                      color: 'var(--text-dim)',
+                      color: '#64748b',
                       borderRadius: '4px',
                     }}
                     title="Edit asset status or details"
@@ -138,26 +161,22 @@ export const AssetList: React.FC<AssetListProps> = ({
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginTop: '10px',
-                  paddingTop: '8px',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.04)',
-                  fontSize: '11px',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                <span>ID: <code style={{ fontFamily: 'var(--font-mono)' }}>{asset.id}</code></span>
-                <span>
-                  Physical Mass:{' '}
-                  <strong style={{ color: asset.mass_kg ? '#cbd5e1' : '#f59e0b' }}>
-                    {asset.mass_kg ? `${asset.mass_kg} kg` : 'Unspecified'}
-                  </strong>
-                </span>
-              </div>
+              {asset.mass_kg !== null && asset.mass_kg !== undefined && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    marginTop: '8px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: '#64748b',
+                  }}
+                >
+                  <HardDrive size={12} />
+                  <span>Hardware mass: {asset.mass_kg} kg</span>
+                </div>
+              )}
             </div>
           );
         })}
@@ -166,10 +185,7 @@ export const AssetList: React.FC<AssetListProps> = ({
       {isModalOpen && (
         <AssetModal
           initialAsset={editingAsset}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingAsset(null);
-          }}
+          onClose={() => setIsModalOpen(false)}
           onSave={async (data) => {
             if (editingAsset) {
               await onUpdateAsset(editingAsset.id, data);
@@ -177,7 +193,6 @@ export const AssetList: React.FC<AssetListProps> = ({
               await onCreateAsset(data as CreateAssetInput);
             }
             setIsModalOpen(false);
-            setEditingAsset(null);
           }}
         />
       )}
@@ -188,10 +203,10 @@ export const AssetList: React.FC<AssetListProps> = ({
 interface AssetModalProps {
   initialAsset: Asset | null;
   onClose: () => void;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: CreateAssetInput | UpdateAssetInput) => Promise<void>;
 }
 
-export const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, onSave }) => {
+const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, onSave }) => {
   const [name, setName] = useState(initialAsset?.name || '');
   const [category, setCategory] = useState<Asset['category']>(initialAsset?.category || 'computer');
   const [manufacturer, setManufacturer] = useState(initialAsset?.manufacturer || '');
@@ -229,8 +244,8 @@ export const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, o
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        backdropFilter: 'blur(4px)',
+        backgroundColor: 'rgba(15, 23, 42, 0.5)',
+        backdropFilter: 'blur(3px)',
         zIndex: 1000,
         display: 'flex',
         alignItems: 'center',
@@ -241,23 +256,23 @@ export const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, o
     >
       <div
         className="card"
-        style={{ width: '100%', maxWidth: '460px', padding: '24px' }}
+        style={{ width: '100%', maxWidth: '460px', padding: '28px', backgroundColor: '#ffffff', borderRadius: '12px' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>
-          {initialAsset ? 'Edit Equipment / Asset' : 'Register New Asset'}
+        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
+          {initialAsset ? 'Edit Equipment Profile' : 'Register New Equipment'}
         </h3>
 
         {error && (
-          <div style={{ color: '#fb7185', fontSize: '13px', marginBottom: '12px' }}>
+          <div style={{ color: '#b91c1c', backgroundColor: '#fef2f2', padding: '10px', borderRadius: '6px', fontSize: '13px', marginBottom: '14px' }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-              Asset Name *
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+              Equipment Name *
             </label>
             <input
               id="input-asset-name"
@@ -265,13 +280,13 @@ export const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, o
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. ThinkPad Diagnostic Station"
+              placeholder="e.g. ThinkPad T480 Workstation"
             />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
                 Category *
               </label>
               <select
@@ -286,8 +301,8 @@ export const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, o
             </div>
 
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                Status *
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+                Operating Status *
               </label>
               <select
                 id="select-asset-status"
@@ -304,20 +319,20 @@ export const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, o
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
                 Manufacturer
               </label>
               <input
-                id="input-asset-manufacturer"
+                id="input-asset-mfr"
                 type="text"
                 value={manufacturer}
                 onChange={(e) => setManufacturer(e.target.value)}
-                placeholder="e.g. Lenovo, Haas"
+                placeholder="e.g. Lenovo / Haas"
               />
             </div>
 
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
                 Model
               </label>
               <input
@@ -325,14 +340,14 @@ export const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, o
                 type="text"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                placeholder="e.g. T480, VF-2"
+                placeholder="e.g. T480 / VF-2SS"
               />
             </div>
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-              Mass (kg) — for retained mass calculation
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
+              Mass in kg (Used for verified retained material metrics)
             </label>
             <input
               id="input-asset-mass"
@@ -340,21 +355,16 @@ export const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, o
               step="0.01"
               value={massKg}
               onChange={(e) => setMassKg(e.target.value)}
-              placeholder="e.g. 1.65 or 3500"
+              placeholder="e.g. 1.65"
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
             <button type="button" onClick={onClose} className="btn-secondary">
               Cancel
             </button>
-            <button
-              id="btn-save-asset"
-              type="submit"
-              disabled={submitting}
-              className="btn-primary"
-            >
-              {submitting ? 'Saving...' : 'Save Asset'}
+            <button type="submit" id="btn-save-asset" className="btn-primary" disabled={submitting}>
+              {submitting ? 'Saving...' : 'Save Equipment'}
             </button>
           </div>
         </form>

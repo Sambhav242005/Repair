@@ -1,47 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 :root {
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Premium Industrial Dark Theme Palette */
-  --bg-deep: #070a12;
-  --bg-surface: #0d121f;
-  --bg-card: rgba(18, 26, 43, 0.75);
-  --bg-card-hover: rgba(25, 36, 60, 0.85);
-  --bg-subtle: #162035;
-  --bg-input: #0b101c;
+  /* Iconic iFixit Palette */
+  --ifixit-blue: #0071ce;
+  --ifixit-blue-hover: #005fa3;
+  --ifixit-blue-light: #ebf5ff;
+  --ifixit-blue-border: #b9e1ff;
+  --ifixit-navy: #0d2c54;
+  --ifixit-dark: #1a202c;
 
-  /* Borders and Separators */
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-medium: rgba(255, 255, 255, 0.14);
-  --border-accent: rgba(14, 165, 233, 0.35);
+  /* Surfaces & Backgrounds */
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
 
-  /* Typography Colors */
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-  --text-bright: #ffffff;
+  /* Borders & Dividers */
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-active: #0071ce;
 
-  /* Accents & Brand */
-  --brand-cyan: #0ea5e9;
-  --brand-cyan-glow: rgba(14, 165, 233, 0.25);
-  --brand-teal: #14b8a6;
-  --brand-emerald: #10b981;
-  --brand-emerald-glow: rgba(16, 185, 129, 0.2);
-  --brand-amber: #f59e0b;
-  --brand-amber-glow: rgba(245, 158, 11, 0.2);
-  --brand-rose: #f43f5e;
-  --brand-rose-glow: rgba(244, 63, 94, 0.25);
-  --brand-purple: #8b5cf6;
+  /* Typography */
+  --text-main: #0f172a;
+  --text-body: #334155;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+  --text-white: #ffffff;
 
-  /* Shadows and Radii */
+  /* State Colors */
+  --color-success: #10b981;
+  --color-success-bg: #ecfdf5;
+  --color-success-border: #a7f3d0;
+
+  --color-warning: #f59e0b;
+  --color-warning-bg: #fffbeb;
+  --color-warning-border: #fde68a;
+
+  --color-danger: #ef4444;
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #fecaca;
+
+  /* iFixit Bullet Dots */
+  --dot-red: #ef4444;
+  --dot-orange: #f97316;
+  --dot-yellow: #eab308;
+  --dot-green: #22c55e;
+  --dot-blue: #3b82f6;
+
+  /* Radii & Shadows */
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
-  --shadow-glow: 0 0 24px var(--brand-cyan-glow);
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  --shadow-ifixit: 0 4px 14px rgba(0, 113, 206, 0.18);
 }
 
 *, *::before, *::after {
@@ -52,31 +71,30 @@
 
 html, body {
   min-height: 100%;
-  background-color: var(--bg-deep);
-  color: var(--text-main);
+  background-color: var(--bg-page);
+  color: var(--text-body);
   font-family: var(--font-sans);
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  background-image: 
-    radial-gradient(circle at 15% 10%, rgba(14, 165, 233, 0.08) 0%, transparent 45%),
-    radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
-    linear-gradient(to bottom, #070a12, #0a0f1d);
-  background-attachment: fixed;
-}
-
 a {
-  color: var(--brand-cyan);
+  color: var(--ifixit-blue);
   text-decoration: none;
+  font-weight: 600;
   transition: color 0.15s ease;
 }
 a:hover {
-  color: #38bdf8;
+  color: var(--ifixit-blue-hover);
   text-decoration: underline;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-main);
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 button {
@@ -90,7 +108,7 @@ button {
 
 input, select, textarea {
   font-family: inherit;
-  font-size: inherit;
+  font-size: 14px;
   color: var(--text-main);
   background-color: var(--bg-input);
   border: 1px solid var(--border-medium);
@@ -102,52 +120,55 @@ input, select, textarea {
 }
 
 input:focus, select:focus, textarea:focus {
-  border-color: var(--brand-cyan);
-  box-shadow: 0 0 0 3px var(--brand-cyan-glow);
+  border-color: var(--ifixit-blue);
+  box-shadow: 0 0 0 3px rgba(0, 113, 206, 0.15);
 }
 
 input::placeholder, textarea::placeholder {
   color: var(--text-dim);
 }
 
-/* Base Utility Classes */
+/* Card Container */
 .card {
   background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: 24px;
-  box-shadow: var(--shadow-md);
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .card:hover {
-  border-color: var(--border-medium);
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-md);
 }
 
+/* iFixit Action Buttons */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
-  color: #ffffff;
-  font-weight: 600;
-  padding: 10px 18px;
+  background: var(--ifixit-blue);
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 11px 20px;
   border-radius: var(--radius-md);
-  box-shadow: 0 2px 10px var(--brand-cyan-glow);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 113, 206, 0.25);
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-primary:hover:not(:disabled) {
+  background: var(--ifixit-blue-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.4);
+  box-shadow: var(--shadow-ifixit);
 }
 
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary {
@@ -158,15 +179,17 @@ input::placeholder, textarea::placeholder {
   background: var(--bg-subtle);
   color: var(--text-main);
   border: 1px solid var(--border-medium);
-  font-weight: 500;
-  padding: 9px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 18px;
   border-radius: var(--radius-md);
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--brand-cyan);
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .btn-danger {
@@ -174,65 +197,143 @@ input::placeholder, textarea::placeholder {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(244, 63, 94, 0.15);
-  color: #fb7185;
-  border: 1px solid rgba(244, 63, 94, 0.3);
+  background: var(--color-danger-bg);
+  color: #b91c1c;
+  border: 1px solid var(--color-danger-border);
   font-weight: 600;
-  padding: 9px 16px;
+  font-size: 14px;
+  padding: 10px 18px;
   border-radius: var(--radius-md);
+  transition: all 0.15s ease;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: rgba(244, 63, 94, 0.25);
-  border-color: #f43f5e;
+  background: #fee2e2;
+  border-color: #f87171;
+  color: #991b1b;
 }
 
+/* Status Badges */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .badge-operational {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--color-success-bg);
+  color: #047857;
+  border: 1px solid var(--color-success-border);
 }
 
 .badge-maintenance {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--color-warning-bg);
+  color: #b45309;
+  border: 1px solid var(--color-warning-border);
 }
 
 .badge-faulty {
-  background: rgba(244, 63, 94, 0.15);
-  color: #fb7185;
-  border: 1px solid rgba(244, 63, 94, 0.3);
+  background: var(--color-danger-bg);
+  color: #b91c1c;
+  border: 1px solid var(--color-danger-border);
 }
 
 .badge-retired {
-  background: rgba(148, 163, 184, 0.12);
-  color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
 }
 
-/* Pulse animation for active running jobs */
+/* iFixit Step Number Pill */
+.ifixit-step-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ifixit-blue);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 4px rgba(0, 113, 206, 0.2);
+}
+
+/* iFixit Color Dots */
+.ifixit-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.ifixit-dot.red { background-color: var(--dot-red); box-shadow: 0 0 4px rgba(239, 68, 68, 0.5); }
+.ifixit-dot.orange { background-color: var(--dot-orange); box-shadow: 0 0 4px rgba(249, 115, 22, 0.5); }
+.ifixit-dot.yellow { background-color: var(--dot-yellow); box-shadow: 0 0 4px rgba(234, 179, 8, 0.5); }
+.ifixit-dot.green { background-color: var(--dot-green); box-shadow: 0 0 4px rgba(34, 197, 94, 0.5); }
+.ifixit-dot.blue { background-color: var(--dot-blue); box-shadow: 0 0 4px rgba(59, 130, 246, 0.5); }
+
+/* Repairability Score Circle */
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 18px;
+  border: 3px solid;
+}
+.score-high {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #10b981;
+}
+.score-medium {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+/* Callout Boxes */
+.callout-box {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  margin-top: 10px;
+  font-size: 13.5px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.callout-success {
+  background-color: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: #065f46;
+}
+.callout-warning {
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  color: #92400e;
+}
+.callout-info {
+  background-color: var(--ifixit-blue-light);
+  border: 1px solid var(--ifixit-blue-border);
+  color: #075985;
+}
+
+/* Pulse animation */
 @keyframes pulseGlow {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(1.15);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.15); }
 }
 
 .pulse-dot {
@@ -242,52 +343,23 @@ input::placeholder, textarea::placeholder {
   border-radius: 50%;
   animation: pulseGlow 1.8s infinite ease-in-out;
 }
+.pulse-dot-cyan { background-color: var(--ifixit-blue); }
+.pulse-dot-green { background-color: var(--color-success); }
+.pulse-dot-amber { background-color: var(--color-warning); }
+.pulse-dot-rose { background-color: var(--color-danger); }
 
-.pulse-dot-cyan { background-color: var(--brand-cyan); box-shadow: 0 0 8px var(--brand-cyan); }
-.pulse-dot-green { background-color: var(--brand-emerald); box-shadow: 0 0 8px var(--brand-emerald); }
-.pulse-dot-amber { background-color: var(--brand-amber); box-shadow: 0 0 8px var(--brand-amber); }
-.pulse-dot-rose { background-color: var(--brand-rose); box-shadow: 0 0 8px var(--brand-rose); }
-
-/* Banner */
-.sample-banner {
-  background: linear-gradient(90deg, #1e1b4b, #172554);
-  border-bottom: 1px solid rgba(147, 197, 253, 0.2);
-  color: #bfdbfe;
-  font-size: 13px;
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-/* Spinner */
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  display: inline-block;
-}
-
-/* Scrollbar */
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0f1d;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #94a3b8;
 }

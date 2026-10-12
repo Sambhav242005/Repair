@@ -6,6 +6,8 @@ import {
   Volume2,
   VolumeX,
   UserCheck,
+  ShieldCheck,
+  Search,
 } from 'lucide-react';
 import { DemoRole } from '../types';
 
@@ -36,185 +38,202 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       id="main-header"
       style={{
-        backgroundColor: 'rgba(11, 16, 28, 0.85)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid var(--border-subtle)',
+        backgroundColor: '#ffffff',
+        borderBottom: '2px solid #e2e8f0',
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        padding: '0 24px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
       }}
     >
+      {/* Top iFixit Blue Announcement Bar */}
+      <div
+        style={{
+          backgroundColor: '#0071ce',
+          color: '#ffffff',
+          fontSize: '12px',
+          fontWeight: 600,
+          padding: '6px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ShieldCheck size={14} />
+          <span>REPAIR MANIFESTO: If you can't open it, you don't own it. Prevent premature device retirement.</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', opacity: 0.9 }}>
+          <span>Five-Hour MVP</span>
+          <span>•</span>
+          <span>Open Contract v1.0</span>
+        </div>
+      </div>
+
+      {/* Main Navigation Bar */}
       <div
         style={{
           maxWidth: '1440px',
           margin: '0 auto',
+          padding: '0 24px',
           height: '70px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '20px',
+          gap: '24px',
         }}
       >
-        {/* Logo and Brand */}
+        {/* Brand & Identity */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div
             style={{
-              width: '42px',
-              height: '42px',
+              width: '44px',
+              height: '44px',
               borderRadius: '10px',
-              background: 'linear-gradient(135deg, #0ea5e9, #6366f1)',
+              backgroundColor: '#0071ce',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 16px var(--brand-cyan-glow)',
+              boxShadow: '0 2px 8px rgba(0, 113, 206, 0.3)',
             }}
           >
-            <Wrench size={22} color="#ffffff" />
+            <Wrench size={24} color="#ffffff" />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h1
+              <span
                 style={{
-                  fontSize: '18px',
+                  fontSize: '22px',
                   fontWeight: 800,
-                  letterSpacing: '0.04em',
-                  color: 'var(--text-bright)',
-                  textTransform: 'uppercase',
+                  color: '#0071ce',
+                  letterSpacing: '-0.03em',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                iFixit
+              </span>
+              <span
+                style={{
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  letterSpacing: '-0.01em',
                 }}
               >
                 Repair Before Replace
-              </h1>
-              <span
-                style={{
-                  fontSize: '10px',
-                  fontFamily: 'var(--font-mono)',
-                  background: 'rgba(14, 165, 233, 0.15)',
-                  color: '#38bdf8',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  border: '1px solid rgba(14, 165, 233, 0.3)',
-                }}
-              >
-                MVP v1.0
               </span>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              Diagnostic Guidance &amp; Factory Continuity
+            <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 500 }}>
+              Step-by-step troubleshooting, parts intelligence & factory fleet care
             </p>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <nav style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button
-            id="nav-tab-repair"
+            id="tab-repair"
             onClick={() => onSelectTab('repair')}
             style={{
-              display: 'inline-flex',
+              display: 'flex',
               alignItems: 'center',
               gap: '8px',
               padding: '10px 18px',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: 600,
+              borderRadius: '8px',
+              fontWeight: 700,
               fontSize: '14px',
-              background:
-                activeTab === 'repair' ? 'rgba(14, 165, 233, 0.16)' : 'transparent',
-              color: activeTab === 'repair' ? '#38bdf8' : 'var(--text-muted)',
-              border: `1px solid ${
-                activeTab === 'repair' ? 'rgba(14, 165, 233, 0.35)' : 'transparent'
-              }`,
+              backgroundColor: activeTab === 'repair' ? '#ebf5ff' : 'transparent',
+              color: activeTab === 'repair' ? '#0071ce' : '#475569',
+              border: activeTab === 'repair' ? '1px solid #b9e1ff' : '1px solid transparent',
+              transition: 'all 0.15s ease',
             }}
           >
-            <Wrench size={17} />
-            Repair &amp; Diagnostics
+            <Wrench size={18} />
+            <span>Repair Guides & Cases</span>
           </button>
 
           <button
-            id="nav-tab-factory"
+            id="tab-factory"
             onClick={() => onSelectTab('factory')}
             style={{
-              display: 'inline-flex',
+              display: 'flex',
               alignItems: 'center',
               gap: '8px',
               padding: '10px 18px',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: 600,
+              borderRadius: '8px',
+              fontWeight: 700,
               fontSize: '14px',
-              background:
-                activeTab === 'factory' ? 'rgba(14, 165, 233, 0.16)' : 'transparent',
-              color: activeTab === 'factory' ? '#38bdf8' : 'var(--text-muted)',
-              border: `1px solid ${
-                activeTab === 'factory' ? 'rgba(14, 165, 233, 0.35)' : 'transparent'
-              }`,
+              backgroundColor: activeTab === 'factory' ? '#ebf5ff' : 'transparent',
+              color: activeTab === 'factory' ? '#0071ce' : '#475569',
+              border: activeTab === 'factory' ? '1px solid #b9e1ff' : '1px solid transparent',
+              transition: 'all 0.15s ease',
             }}
           >
-            <Factory size={17} />
-            Factory Operations
+            <Factory size={18} />
+            <span>Factory & Machinery Fleet</span>
           </button>
         </nav>
 
-        {/* Controls: Sound, Alert Bell, Demo Role */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          {/* Sound opt-in button */}
+        {/* Header Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Audio Chime Toggle */}
           <button
-            id="btn-sound-optin"
+            id="toggle-sound-btn"
             onClick={onToggleSound}
-            title={soundEnabled ? 'Alert chime enabled. Click to mute.' : 'Alarm sound works after user opt-in. Click to enable sound.'}
+            title={soundEnabled ? 'Alert chimes enabled' : 'Enable audio chimes for new alerts'}
             style={{
-              display: 'inline-flex',
+              display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '7px 12px',
-              borderRadius: 'var(--radius-md)',
+              padding: '8px 12px',
+              borderRadius: '8px',
               fontSize: '12px',
               fontWeight: 600,
-              backgroundColor: soundEnabled ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-              color: soundEnabled ? '#34d399' : 'var(--text-dim)',
-              border: `1px solid ${soundEnabled ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}`,
+              backgroundColor: soundEnabled ? '#ecfdf5' : '#f1f5f9',
+              color: soundEnabled ? '#059669' : '#64748b',
+              border: `1px solid ${soundEnabled ? '#a7f3d0' : '#cbd5e1'}`,
             }}
           >
             {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            <span>{soundEnabled ? 'Sound On' : 'Sound Off'}</span>
+            <span>{soundEnabled ? 'Chime On' : 'Chime Off'}</span>
           </button>
 
-          {/* Alert Bell */}
+          {/* Alert Center Bell */}
           <button
-            id="btn-alert-bell"
+            id="open-alerts-btn"
             onClick={onOpenAlerts}
-            aria-label="View alerts"
             style={{
               position: 'relative',
+              width: '40px',
+              height: '40px',
+              borderRadius: '8px',
+              backgroundColor: unacknowledgedAlertsCount > 0 ? '#fef2f2' : '#f1f5f9',
+              border: `1px solid ${unacknowledgedAlertsCount > 0 ? '#fecaca' : '#cbd5e1'}`,
+              color: unacknowledgedAlertsCount > 0 ? '#dc2626' : '#475569',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '38px',
-              height: '38px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--border-subtle)',
-              color: unacknowledgedAlertsCount > 0 ? '#fb7185' : 'var(--text-muted)',
             }}
           >
             <Bell size={18} />
             {unacknowledgedAlertsCount > 0 && (
               <span
-                id="badge-alert-count"
                 style={{
                   position: 'absolute',
                   top: '-4px',
                   right: '-4px',
-                  backgroundColor: '#f43f5e',
+                  backgroundColor: '#dc2626',
                   color: '#ffffff',
                   fontSize: '10px',
-                  fontWeight: 700,
-                  width: '18px',
+                  fontWeight: 800,
+                  minWidth: '18px',
                   height: '18px',
-                  borderRadius: '50%',
+                  borderRadius: '9999px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 0 8px rgba(244, 63, 94, 0.6)',
+                  padding: '0 4px',
+                  boxShadow: '0 2px 4px rgba(220, 38, 38, 0.4)',
                 }}
               >
                 {unacknowledgedAlertsCount}
@@ -222,38 +241,38 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Demo Role Switch */}
+          {/* Role Switcher */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              padding: '4px 10px',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-subtle)',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
             }}
           >
-            <UserCheck size={14} color="var(--text-dim)" />
+            <UserCheck size={16} color="#64748b" />
             <select
-              id="select-demo-role"
+              id="role-switch"
               value={role}
               onChange={(e) => onSelectRole(e.target.value as DemoRole)}
-              aria-label="Demo role switch"
               style={{
-                background: 'transparent',
                 border: 'none',
-                padding: '2px 4px',
-                fontSize: '12px',
+                background: 'transparent',
                 fontWeight: 600,
-                color: 'var(--text-main)',
+                fontSize: '12px',
+                color: '#1e293b',
+                padding: '4px',
                 cursor: 'pointer',
+                outline: 'none',
                 width: 'auto',
               }}
             >
-              <option value="technician" style={{ background: '#0b101c' }}>Role: Technician</option>
-              <option value="operator" style={{ background: '#0b101c' }}>Role: Operator</option>
-              <option value="planner" style={{ background: '#0b101c' }}>Role: Factory Planner</option>
+              <option value="technician">Role: Technician</option>
+              <option value="operator">Role: Operator</option>
+              <option value="factory_planner">Role: Factory Planner</option>
             </select>
           </div>
         </div>

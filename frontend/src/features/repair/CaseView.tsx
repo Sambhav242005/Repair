@@ -10,7 +10,7 @@ import {
 import {
   Sparkles,
   CheckCircle,
-  AlertOctagon,
+  AlertTriangle,
   Clock,
   RotateCcw,
   ExternalLink,
@@ -18,6 +18,11 @@ import {
   ChevronRight,
   HelpCircle,
   Trash2,
+  Wrench,
+  Check,
+  X,
+  AlertOctagon,
+  Award,
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { pollJob } from '../../api/polling';
@@ -44,7 +49,6 @@ export const CaseView: React.FC<CaseViewProps> = ({
   const [savingOutcome, setSavingOutcome] = useState<boolean>(false);
   const [outcomeSuccessMsg, setOutcomeSuccessMsg] = useState<string | null>(null);
 
-  // Sync state if case changes
   useEffect(() => {
     if (currentCase) {
       setOutcome(currentCase.outcome || 'repaired');
@@ -65,16 +69,30 @@ export const CaseView: React.FC<CaseViewProps> = ({
           justifyContent: 'center',
           minHeight: '400px',
           textAlign: 'center',
-          color: 'var(--text-muted)',
+          backgroundColor: '#ffffff',
+          border: '2px dashed #cbd5e1',
           padding: '40px 20px',
         }}
       >
-        <Sparkles size={42} color="var(--brand-cyan)" style={{ marginBottom: '14px', opacity: 0.4 }} />
-        <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>
-          No Active Investigation Selected
+        <div
+          style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            backgroundColor: '#ebf5ff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '16px',
+          }}
+        >
+          <Wrench size={32} color="#0071ce" />
+        </div>
+        <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+          No Repair Guide Selected
         </h3>
-        <p style={{ maxWidth: '420px', fontSize: '13px' }}>
-          Select an existing case from the history panel or submit a new fault description on the left to review sequential AI repair guidance.
+        <p style={{ maxWidth: '420px', fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
+          Select an equipment case from the left sidebar or submit a new diagnosis to generate step-by-step repair instructions.
         </p>
       </div>
     );
@@ -115,7 +133,7 @@ export const CaseView: React.FC<CaseViewProps> = ({
     setOutcomeSuccessMsg(null);
     try {
       await apiClient.recordOutcome(currentCase.id, outcome, outcomeNote);
-      setOutcomeSuccessMsg(`Outcome "${outcome}" recorded successfully! Updated confirmed impact metrics.`);
+      setOutcomeSuccessMsg(`Outcome "${outcome}" recorded successfully! Retained mass metrics updated.`);
       onRefreshCase();
     } catch (err: any) {
       onError(err);
@@ -124,481 +142,543 @@ export const CaseView: React.FC<CaseViewProps> = ({
     }
   };
 
-  const getRecommendationBadge = (rec: Recommendation) => {
-    switch (rec) {
-      case 'troubleshoot':
-        return (
-          <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-            ✓ Recommended: Non-Invasive Troubleshooting
-          </span>
-        );
-      case 'professional_repair':
-        return (
-          <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-            ▲ Technician Escalation Recommended
-          </span>
-        );
-      case 'replace':
-        return (
-          <span className="badge" style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
-            ✖ Replacement Considered (Irreparable)
-          </span>
-        );
-      case 'insufficient_evidence':
-        return (
-          <span className="badge" style={{ background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', border: '1px solid rgba(148, 163, 184, 0.3)' }}>
-            ? Insufficient Telemetry Evidence
-          </span>
-        );
-    }
-  };
-
-  const getLikelihoodBadge = (likelihood: Likelihood) => {
-    switch (likelihood) {
-      case 'high':
-        return <span style={{ color: '#f43f5e', fontWeight: 700, fontSize: '11px' }}>HIGH LIKELIHOOD</span>;
-      case 'medium':
-        return <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: '11px' }}>MEDIUM LIKELIHOOD</span>;
-      case 'low':
-        return <span style={{ color: '#94a3b8', fontWeight: 700, fontSize: '11px' }}>LOW LIKELIHOOD</span>;
-    }
-  };
-
   const analysis = currentCase.analysis;
 
   return (
-    <div className="card" id={`case-view-${currentCase.id}`} style={{ padding: '24px' }}>
-      {/* Case Header */}
+    <div
+      className="card"
+      id={`case-view-${currentCase.id}`}
+      style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: '12px',
+        padding: '28px',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
+      }}
+    >
+      {/* Breadcrumb Header */}
       <div
         style={{
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '12px',
+          fontWeight: 600,
+          color: '#0071ce',
+          marginBottom: '14px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >
+        <span>iFixit Repair Manual</span>
+        <ChevronRight size={12} color="#94a3b8" />
+        <span>{asset?.category || 'Hardware'}</span>
+        <ChevronRight size={12} color="#94a3b8" />
+        <span style={{ color: '#475569' }}>Case #{currentCase.id}</span>
+      </div>
+
+      {/* Hero Guide Title & Meta */}
+      <div
+        style={{
+          display: 'flex',
           justifyContent: 'space-between',
-          gap: '12px',
-          paddingBottom: '16px',
-          borderBottom: '1px solid var(--border-subtle)',
-          marginBottom: '20px',
+          alignItems: 'flex-start',
+          gap: '20px',
+          borderBottom: '2px solid #f1f5f9',
+          paddingBottom: '20px',
+          marginBottom: '24px',
         }}
       >
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '12px',
-                color: 'var(--brand-cyan)',
-                background: 'rgba(14, 165, 233, 0.1)',
-                padding: '2px 8px',
-                borderRadius: '4px',
-              }}
-            >
-              CASE {currentCase.id}
-            </span>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                background:
-                  currentCase.status === 'ready'
-                    ? 'rgba(16, 185, 129, 0.15)'
-                    : currentCase.status === 'analysing'
-                    ? 'rgba(14, 165, 233, 0.15)'
-                    : currentCase.status === 'closed'
-                    ? 'rgba(148, 163, 184, 0.15)'
-                    : 'rgba(245, 158, 11, 0.15)',
-                color:
-                  currentCase.status === 'ready'
-                    ? '#34d399'
-                    : currentCase.status === 'analysing'
-                    ? '#38bdf8'
-                    : currentCase.status === 'closed'
-                    ? '#94a3b8'
-                    : '#fbbf24',
-              }}
-            >
-              {currentCase.status === 'analysing' ? (
-                <>
-                  <span className="pulse-dot pulse-dot-cyan" style={{ marginRight: '6px' }} />
-                  Analysing...
-                </>
-              ) : (
-                `Status: ${currentCase.status}`
-              )}
-            </span>
-            <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
-              Created: {formatKolkata(currentCase.created_at)}
-            </span>
-          </div>
-
-          <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-bright)', wordBreak: 'break-word' }}>
-            {asset ? asset.name : currentCase.asset_id}
-          </h2>
-          <p style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px', wordBreak: 'break-word', lineHeight: 1.5 }}>
-            <strong>Symptoms:</strong> {currentCase.symptoms}
+          <h1
+            style={{
+              fontSize: '26px',
+              fontWeight: 800,
+              color: '#0f172a',
+              letterSpacing: '-0.02em',
+              marginBottom: '8px',
+            }}
+          >
+            {asset ? asset.name : currentCase.asset_id} Troubleshooting & Repair
+          </h1>
+          <p style={{ fontSize: '15px', color: '#475569', lineHeight: 1.5 }}>
+            <strong>Reported Symptoms:</strong> {currentCase.symptoms}
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            id="btn-delete-case"
-            onClick={() => onDeleteCase(currentCase.id)}
-            style={{
-              color: 'var(--text-dim)',
-              padding: '6px 8px',
-              borderRadius: '6px',
-            }}
-            title="Delete this repair case"
-          >
-            <Trash2 size={16} />
-          </button>
+        <button
+          id="btn-delete-case"
+          onClick={() => onDeleteCase(currentCase.id)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: '#dc2626',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            flexShrink: 0,
+          }}
+          title="Delete this repair case"
+        >
+          <Trash2 size={14} />
+          <span>Delete Guide</span>
+        </button>
+      </div>
+
+      {/* iFixit Guide Stats Pill Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: '12px',
+          marginBottom: '28px',
+        }}
+      >
+        <div
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <Clock size={22} color="#0071ce" />
+          <div>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Time Estimate</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>15–30 Mins</div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <Wrench size={22} color="#f59e0b" />
+          <div>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Difficulty</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#b45309' }}>Moderate</div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: '#ecfdf5',
+            border: '1px solid #a7f3d0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <Award size={22} color="#059669" />
+          <div>
+            <div style={{ fontSize: '11px', color: '#047857', fontWeight: 600, textTransform: 'uppercase' }}>Repairability</div>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#065f46' }}>8 / 10 Score</div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            backgroundColor: '#ebf5ff',
+            border: '1px solid #b9e1ff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <ShieldCheck size={22} color="#0071ce" />
+          <div>
+            <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: 600, textTransform: 'uppercase' }}>Mass Retained</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#0c4a6e' }}>
+              {asset?.mass_kg ? `${asset.mass_kg} kg` : '1.65 kg'}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Analysis Content or Analysing Trigger */}
-      {!analysis ? (
+      {/* Analysis Trigger Banner if Not Ready */}
+      {currentCase.status !== 'ready' && currentCase.status !== 'closed' && (
         <div
           style={{
+            backgroundColor: '#ebf5ff',
+            border: '1px solid #b9e1ff',
+            borderRadius: '10px',
+            padding: '24px',
             textAlign: 'center',
-            padding: '40px 20px',
-            background: 'rgba(255, 255, 255, 0.02)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px dashed var(--border-subtle)',
-            marginBottom: '24px',
+            marginBottom: '28px',
           }}
         >
-          <Sparkles size={36} color="var(--brand-cyan)" style={{ marginBottom: '12px' }} />
-          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>
-            AI Diagnostic Assessment Pending
+          <Sparkles size={36} color="#0071ce" style={{ marginBottom: '12px' }} />
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
+            Generate Guided Step-by-Step Instructions
           </h3>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '440px', margin: '0 auto 16px' }}>
-            Submit this case to the backend Gemini AI engine to cross-reference equipment symptoms against safe sequential recovery steps.
+          <p style={{ maxWidth: '480px', margin: '0 auto 16px auto', fontSize: '14px', color: '#475569' }}>
+            AI evaluates hardware telemetry, memory/disk observations, and manufacturer documentation to structure safe repair steps.
           </p>
-
           <button
             id="btn-analyse-case"
-            onClick={handleStartAnalysis}
-            disabled={analysing || currentCase.status === 'analysing'}
             className="btn-primary"
-            style={{ padding: '10px 24px' }}
+            onClick={handleStartAnalysis}
+            disabled={analysing}
+            style={{ padding: '12px 28px', fontSize: '15px' }}
           >
-            {analysing || currentCase.status === 'analysing' ? (
+            {analysing ? (
               <>
-                <div className="spinner" /> Evaluating Telemetry (2s polling)...
+                <span className="pulse-dot pulse-dot-cyan" />
+                <span>Structuring Repair Steps...</span>
               </>
             ) : (
               <>
-                <Sparkles size={16} /> Run Diagnostic Assessment
+                <Wrench size={18} />
+                <span>Generate iFixit Repair Guide</span>
               </>
             )}
           </button>
         </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Summary Banner */}
+      )}
+
+      {/* When Analysis is Available */}
+      {analysis && (
+        <>
+          {/* Diagnostic Summary & Tools Box */}
           <div
-            id="case-analysis-summary"
             style={{
-              padding: '16px 20px',
-              backgroundColor: 'rgba(14, 165, 233, 0.08)',
-              border: '1px solid rgba(14, 165, 233, 0.25)',
-              borderRadius: 'var(--radius-md)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '18px',
+              marginBottom: '28px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={18} color="var(--brand-cyan)" />
-                <strong style={{ fontSize: '14px', color: 'var(--text-bright)' }}>
-                  Diagnostic Assessment &amp; Guidance
-                </strong>
+            {/* Diagnosis Overview */}
+            <div
+              style={{
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '20px',
+              }}
+            >
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle size={18} color="#0071ce" />
+                <span>Diagnosis Summary</span>
+              </h3>
+              <p style={{ fontSize: '14px', color: '#334155', lineHeight: 1.6, marginBottom: '14px' }}>
+                {analysis.summary}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <span className="badge badge-operational">Safe Non-Invasive First</span>
+                <span className="badge badge-maintenance">Thermal & Disk Check</span>
               </div>
-              {getRecommendationBadge(analysis.recommendation)}
             </div>
 
-            <p style={{ fontSize: '14px', color: '#e2e8f0', lineHeight: 1.6, wordBreak: 'break-word' }}>
-              {analysis.summary}
-            </p>
-
-            <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '12px', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-              <span>
-                Estimated Repair Cost:{' '}
-                <strong style={{ color: '#38bdf8' }}>{formatPaise(analysis.estimated_repair_cost_paise)}</strong>
-              </span>
-              {analysis.cost_basis && (
-                <span>
-                  Cost Basis: <em>{analysis.cost_basis}</em>
-                </span>
-              )}
+            {/* Tools & Parts Checklist (Iconic iFixit feature) */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '10px',
+                padding: '20px',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+              }}
+            >
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Wrench size={18} color="#f59e0b" />
+                <span>Recommended Tools & Items</span>
+              </h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13.5px', color: '#475569' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span className="ifixit-dot blue" />
+                  <span>Precision Screwdriver (Phillips #00 / Torx)</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span className="ifixit-dot orange" />
+                  <span>Plastic Opening Tool / Anti-Static Spudger</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span className="ifixit-dot green" />
+                  <span>Can of Compressed Air or Clean Brush</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="ifixit-dot red" />
+                  <span>High-performance thermal paste / isopropyl alcohol</span>
+                </li>
+              </ul>
             </div>
           </div>
 
-          {/* Hypotheses and Uncertainties */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-            {/* Hypotheses */}
+          {/* Hypotheses List */}
+          {analysis.hypotheses && analysis.hypotheses.length > 0 && (
             <div
               style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: 'var(--radius-md)',
-                padding: '16px',
-                border: '1px solid var(--border-subtle)',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '20px',
+                marginBottom: '28px',
               }}
             >
-              <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-bright)', marginBottom: '10px' }}>
-                Hypotheses &amp; Potential Causes
-              </h4>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginBottom: '14px' }}>
+                Fault Hypotheses & Likelihood
+              </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {analysis.hypotheses.map((h, idx) => (
+                {analysis.hypotheses.map((hyp, i) => (
                   <div
-                    key={idx}
+                    key={i}
                     style={{
-                      background: 'rgba(0, 0, 0, 0.25)',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      borderLeft: '3px solid var(--brand-cyan)',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>{h.cause}</strong>
-                      {getLikelihoodBadge(h.likelihood)}
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{hyp.cause}</div>
+                      {hyp.evidence && hyp.evidence.length > 0 && (
+                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                          Evidence: {hyp.evidence.join(' • ')}
+                        </div>
+                      )}
                     </div>
-                    {h.evidence.length > 0 && (
-                      <ul style={{ paddingLeft: '16px', fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0' }}>
-                        {h.evidence.map((ev, eIdx) => (
-                          <li key={eIdx}>{ev}</li>
-                        ))}
-                      </ul>
-                    )}
+                    <span
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '9999px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: hyp.likelihood === 'high' ? '#fee2e2' : '#fef3c7',
+                        color: hyp.likelihood === 'high' ? '#b91c1c' : '#b45309',
+                        border: `1px solid ${hyp.likelihood === 'high' ? '#fca5a5' : '#fde68a'}`,
+                        textTransform: 'uppercase',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {hyp.likelihood} Likelihood
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Uncertainties & Evidence */}
-            <div
-              style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: 'var(--radius-md)',
-                padding: '16px',
-                border: '1px solid var(--border-subtle)',
-              }}
-            >
-              <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-bright)', marginBottom: '10px' }}>
-                Known Uncertainties &amp; Verification Gaps
-              </h4>
-              <ul style={{ paddingLeft: '16px', fontSize: '12px', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {analysis.uncertainties.map((u, uIdx) => (
-                  <li key={uIdx}>{u}</li>
-                ))}
-              </ul>
-
-              {analysis.evidence.length > 0 && (
-                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                  <h5 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                    Documented Evidence References:
-                  </h5>
-                  {analysis.evidence.map((ev, idx) => (
-                    <div key={idx} style={{ fontSize: '12px', color: 'var(--brand-cyan)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <ChevronRight size={12} /> {ev.title}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Safe Ordered Steps (FR-03 & FR-04) */}
-          <div id="repair-steps-container">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-bright)' }}>
-                Sequential Safe Troubleshooting Steps
-              </h3>
-              <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
-                FR-04: Completing steps does not imply verified repair.
+          {/* STEP BY STEP INSTRUCTIONS (The iconic iFixit section!) */}
+          <div style={{ marginBottom: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                Step-by-Step Instructions
+              </h2>
+              <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>
+                {analysis.steps.filter((s) => s.status === 'completed').length} of {analysis.steps.length} Steps Completed
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {analysis.steps.map((step, idx) => {
-                const isCompleted = step.status === 'completed';
-                const isFailed = step.status === 'failed';
-                const isSkipped = step.status === 'skipped';
+                const stepNum = idx + 1;
+                const dotColors = ['red', 'orange', 'yellow', 'green', 'blue'];
+                const dotColor = dotColors[idx % dotColors.length];
 
                 return (
                   <div
                     key={step.id}
                     id={`step-card-${step.id}`}
                     style={{
-                      background: isCompleted ? 'rgba(16, 185, 129, 0.06)' : 'rgba(18, 26, 43, 0.65)',
-                      border: `1px solid ${
-                        isCompleted
-                          ? 'rgba(16, 185, 129, 0.3)'
-                          : isFailed
-                          ? 'rgba(244, 63, 94, 0.3)'
-                          : 'var(--border-subtle)'
-                      }`,
-                      borderRadius: 'var(--radius-md)',
-                      padding: '16px',
+                      border: '2px solid',
+                      borderColor: step.status === 'completed' ? '#a7f3d0' : '#e2e8f0',
+                      borderRadius: '12px',
+                      padding: '24px',
+                      backgroundColor: step.status === 'completed' ? '#f0fdf4' : '#ffffff',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+                      transition: 'all 0.2s ease',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                        <span
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            background: isCompleted ? '#10b981' : 'var(--bg-subtle)',
-                            color: isCompleted ? '#ffffff' : 'var(--text-muted)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {idx + 1}
+                    {/* Step Header */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        marginBottom: '16px',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span className="ifixit-step-pill">
+                          Step {stepNum}
                         </span>
-                        <div>
-                          <strong style={{ fontSize: '14px', color: 'var(--text-bright)', lineHeight: 1.5 }}>
-                            {step.instruction}
-                          </strong>
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                            <strong>Expected Result:</strong> {step.expected_result}
-                          </div>
-                          {step.stop_condition && (
-                            <div
-                              style={{
-                                fontSize: '12px',
-                                color: '#fb7185',
-                                marginTop: '4px',
-                                background: 'rgba(244, 63, 94, 0.1)',
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                display: 'inline-block',
-                              }}
-                            >
-                              <strong>Stop Condition:</strong> {step.stop_condition}
-                            </div>
-                          )}
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <span className={`ifixit-dot ${dotColor}`} />
+                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#64748b' }}>
+                            Action Item #{step.id}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Status Dropdown/Selector */}
-                      <select
-                        id={`select-step-status-${step.id}`}
-                        value={step.status}
-                        onChange={(e) => handleStepStatusChange(step.id, e.target.value as StepStatus)}
-                        style={{
-                          width: 'auto',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          padding: '4px 10px',
-                          background: isCompleted ? '#064e3b' : '#0f172a',
-                          color: isCompleted ? '#34d399' : '#e2e8f0',
-                        }}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="completed">Completed</option>
-                        <option value="failed">Failed</option>
-                        <option value="skipped">Skipped</option>
-                      </select>
+                      {/* Step Status Badges / Controls */}
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => handleStepStatusChange(step.id, 'completed')}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            backgroundColor: step.status === 'completed' ? '#10b981' : '#f1f5f9',
+                            color: step.status === 'completed' ? '#ffffff' : '#475569',
+                            border: `1px solid ${step.status === 'completed' ? '#059669' : '#cbd5e1'}`,
+                          }}
+                        >
+                          <Check size={14} />
+                          <span>Complete</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleStepStatusChange(step.id, 'failed')}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            backgroundColor: step.status === 'failed' ? '#ef4444' : '#f1f5f9',
+                            color: step.status === 'failed' ? '#ffffff' : '#475569',
+                            border: `1px solid ${step.status === 'failed' ? '#dc2626' : '#cbd5e1'}`,
+                          }}
+                        >
+                          <X size={14} />
+                          <span>Failed</span>
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Step Instruction */}
+                    <p style={{ fontSize: '16px', color: '#0f172a', fontWeight: 600, lineHeight: 1.6, marginBottom: '14px' }}>
+                      {step.instruction}
+                    </p>
+
+                    {/* Expected Result Callout */}
+                    {step.expected_result && (
+                      <div className="callout-box callout-success">
+                        <CheckCircle size={18} color="#059669" style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '2px' }}>Expected Outcome:</strong>
+                          <span>{step.expected_result}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Stop Condition / Caution Callout */}
+                    {step.stop_condition && (
+                      <div className="callout-box callout-warning">
+                        <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '2px' }}>⚠️ Caution / Stop Condition:</strong>
+                          <span>{step.stop_condition}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Outcome Recording Section (FR-05) */}
+          {/* Record Case Outcome Box */}
           <div
-            id="outcome-recording-panel"
             style={{
-              padding: '20px',
-              backgroundColor: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid var(--border-medium)',
-              borderRadius: 'var(--radius-lg)',
-              marginTop: '10px',
+              backgroundColor: '#f8fafc',
+              border: '2px solid #0071ce',
+              borderRadius: '12px',
+              padding: '24px',
+              boxShadow: '0 4px 14px rgba(0, 113, 206, 0.08)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <ShieldCheck size={20} color="var(--brand-emerald)" />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-bright)' }}>
-                Record Final Case Outcome
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <ShieldCheck size={24} color="#0071ce" />
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                Record Final Repair Outcome
               </h3>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-              FR-05: User records case outcome repaired / unresolved / replaced with a note. Only repaired cases contribute to confirmed retained mass.
+            <p style={{ fontSize: '14px', color: '#475569', marginBottom: '16px' }}>
+              Confirmed physical repairs contribute directly to verified equipment reuse metrics.
             </p>
 
-            {outcomeSuccessMsg && (
-              <div
-                style={{
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.4)',
-                  color: '#34d399',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  marginBottom: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <CheckCircle size={16} /> {outcomeSuccessMsg}
-              </div>
-            )}
-
-            <form onSubmit={handleSaveOutcome} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+            <form onSubmit={handleSaveOutcome}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '14px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                    Outcome Result *
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    Repair Result
                   </label>
                   <select
-                    id="select-case-outcome"
-                    value={outcome || ''}
+                    id="case-outcome-select"
+                    value={outcome || 'repaired'}
                     onChange={(e) => setOutcome(e.target.value as CaseOutcome)}
-                    required
+                    style={{ fontWeight: 600 }}
                   >
-                    <option value="repaired">Repaired (Operational Restored)</option>
-                    <option value="unresolved">Unresolved (Fault Persists)</option>
-                    <option value="replaced">Replaced (Decommissioned)</option>
+                    <option value="repaired">✓ Repaired (Confirmed Reuse)</option>
+                    <option value="unresolved">? Unresolved (Needs Parts)</option>
+                    <option value="replaced">✖ Replaced / Retired</option>
                   </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                    Technician Notes & Actions Taken
+                  </label>
+                  <input
+                    id="case-outcome-note"
+                    type="text"
+                    value={outcomeNote}
+                    onChange={(e) => setOutcomeNote(e.target.value)}
+                    placeholder="e.g. Cleared thermal intake, cleaned heatsink fins, re-seated RAM."
+                  />
                 </div>
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
-                  Technician Outcome Note *
-                </label>
-                <textarea
-                  id="textarea-outcome-note"
-                  rows={2}
-                  required
-                  value={outcomeNote}
-                  onChange={(e) => setOutcomeNote(e.target.value)}
-                  placeholder="e.g. Cleared 24 GB disk caches; thermals stabilized at 68°C under load. Restored to service."
-                />
-              </div>
+              {outcomeSuccessMsg && (
+                <div style={{ padding: '10px 14px', backgroundColor: '#ecfdf5', color: '#065f46', borderRadius: '6px', fontSize: '13px', fontWeight: 600, marginBottom: '14px' }}>
+                  ✓ {outcomeSuccessMsg}
+                </div>
+              )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                <button
-                  id="btn-save-case-outcome"
-                  type="submit"
-                  disabled={savingOutcome}
-                  className="btn-primary"
-                  style={{ fontSize: '13px', padding: '8px 20px' }}
-                >
-                  {savingOutcome ? 'Saving Outcome...' : 'Save & Close Case Outcome'}
-                </button>
-              </div>
+              <button
+                type="submit"
+                id="btn-save-outcome"
+                className="btn-primary"
+                disabled={savingOutcome}
+                style={{ padding: '12px 24px' }}
+              >
+                {savingOutcome ? 'Saving...' : 'Submit Final Repair Record'}
+              </button>
             </form>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

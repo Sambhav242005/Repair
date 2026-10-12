@@ -17,29 +17,34 @@ export const SampleDataBanner: React.FC<SampleDataBannerProps> = ({
 
   return (
     <aside
-      className="sample-banner"
       id="sample-data-banner"
-      aria-label="Demo notice"
+      aria-label="Demo environment notice"
       style={{
-        background: isLive
-          ? 'linear-gradient(90deg, #0f231e, #132e35)'
-          : 'linear-gradient(90deg, #2b1f0d, #251b14)',
-        borderBottom: `1px solid ${isLive ? 'rgba(52, 211, 153, 0.3)' : 'rgba(251, 191, 36, 0.35)'}`,
+        backgroundColor: '#f8fafc',
+        borderBottom: '1px solid #e2e8f0',
+        padding: '10px 24px',
+        fontSize: '13px',
+        color: '#475569',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '16px',
+        flexWrap: 'wrap',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         {isLive ? (
-          <Server size={16} color="#34d399" style={{ flexShrink: 0 }} />
+          <Server size={16} color="#059669" style={{ flexShrink: 0 }} />
         ) : (
-          <AlertTriangle size={16} color="#fbbf24" style={{ flexShrink: 0 }} />
+          <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
         )}
-        <span style={{ color: isLive ? '#a7f3d0' : '#fde68a' }}>
-          <strong>
-            {isLive ? 'LIVE BACKEND MODE (/api/v1):' : 'SAMPLE FIXTURE MODE (Simulated Contract):'}
+        <span>
+          <strong style={{ color: '#0f172a' }}>
+            {isLive ? 'LIVE BACKEND MODE (/api/v1):' : 'SAMPLE DEMO FIXTURES:'}
           </strong>{' '}
           {isLive
-            ? 'Connected to live FastAPI service. Network errors are surfaced explicitly without silent mock fallback.'
-            : 'Explicitly running in standalone fixture mode. Telemetry & AI responses run against local simulated contract state.'}
+            ? 'Connected to live FastAPI backend. Network failures are surfaced explicitly with zero silent fallback.'
+            : 'Metrics reflect verified test fixtures. Only physical repairs count toward retained equipment mass.'}
         </span>
       </div>
 
@@ -47,7 +52,11 @@ export const SampleDataBanner: React.FC<SampleDataBannerProps> = ({
         <button
           id="btn-toggle-api-mode"
           onClick={onToggleMode}
-          title={isLive ? 'Currently in Live Backend mode. Click to switch to Simulated Fixtures.' : 'Currently in Mock Fixtures mode. Click to switch to Live Backend.'}
+          title={
+            isLive
+              ? 'Currently in Live Backend mode. Click to switch to Simulated Fixtures.'
+              : 'Currently in Mock Fixtures mode. Click to switch to Live Backend.'
+          }
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -56,9 +65,9 @@ export const SampleDataBanner: React.FC<SampleDataBannerProps> = ({
             fontWeight: 700,
             padding: '4px 10px',
             borderRadius: '9999px',
-            background: isLive ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)',
-            color: isLive ? '#34d399' : '#fbbf24',
-            border: `1px solid ${isLive ? 'rgba(16, 185, 129, 0.5)' : 'rgba(245, 158, 11, 0.5)'}`,
+            background: isLive ? '#ecfdf5' : '#fffbeb',
+            color: isLive ? '#047857' : '#b45309',
+            border: `1px solid ${isLive ? '#a7f3d0' : '#fde68a'}`,
             cursor: 'pointer',
           }}
         >
@@ -66,27 +75,27 @@ export const SampleDataBanner: React.FC<SampleDataBannerProps> = ({
           {isLive ? 'MODE: LIVE BACKEND' : 'MODE: SAMPLE FIXTURES'}
         </button>
 
-        {!isLive && (
-          <button
-            id="btn-reset-demo"
-            onClick={onResetDemo}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '5px',
-              fontSize: '11px',
-              color: '#fde68a',
-              padding: '3px 8px',
-              borderRadius: '4px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(251, 191, 36, 0.3)',
-            }}
-            title="Reset sample records back to initial seed data"
-          >
-            <RotateCcw size={12} />
-            Reset Fixtures
-          </button>
-        )}
+        <button
+          id="btn-reset-demo"
+          onClick={onResetDemo}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: '#0071ce',
+            padding: '4px 10px',
+            borderRadius: '6px',
+            background: '#ebf5ff',
+            border: '1px solid #b9e1ff',
+            cursor: 'pointer',
+          }}
+          title="Reset sample records back to initial seed data"
+        >
+          <RotateCcw size={13} />
+          Reset Demo
+        </button>
       </div>
     </aside>
   );
