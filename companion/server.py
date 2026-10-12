@@ -8,6 +8,7 @@ import os
 import platform
 from pathlib import Path
 import secrets
+import socket
 import subprocess
 from urllib.parse import urlsplit
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -197,6 +198,18 @@ def main():
     parser.add_argument("--website-origin", default="http://localhost:5173")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        listener.bind(("127.0.0.1", args.port))
+        listener.listen(128)
+    except OSError:
+        listener.close()
+        print(f"Port {args.port} is already in use. No new companion was started.")
+        print(f"If your companion is already running, get its current code at http://127.0.0.1:{args.port}/pairing")
+        print("Use that existing code; a second companion is not needed.")
+        return
     token = secrets.token_urlsafe(24)
     data_root = Path.home() / "Library" / "Application Support" if platform.system() == "Darwin" else Path(os.environ.get("LOCALAPPDATA", str(Path.home())))
     audit = data_root / "FacultyCompanion" / "actions.jsonl"
@@ -209,7 +222,11 @@ def main():
     print("Pairing code (paste into the website):", token, flush=True)
     print("Closing this process disconnects the website; restarting rotates the code.")
     # Windows subprocess helpers require the Proactor loop; do not use reload.
-    uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="warning", access_log=False)
+    try:
+        config = uvicorn.Config(app, host="127.0.0.1", port=args.port, log_level="warning", access_log=False)
+        uvicorn.Server(config).run(sockets=[listener])
+    finally:
+        listener.close()
 
 if __name__ == "__main__":
     main()

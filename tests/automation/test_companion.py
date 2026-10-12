@@ -68,3 +68,18 @@ def test_mac_launch_uses_a_fixed_app_name_and_no_shell(monkeypatch):
     assert run.call_args.args[0]==['/usr/bin/open','-a','System Settings']
     assert not run.call_args.kwargs.get('shell',False)
     with pytest.raises(ValueError):server.launch_app('Terminal; arbitrary command')
+
+def test_occupied_port_never_prints_a_new_pairing_code(monkeypatch, capsys):
+    from unittest.mock import Mock
+    import sys
+    listener=Mock()
+    listener.bind.side_effect=OSError('address in use')
+    monkeypatch.setattr(server.socket,'socket',lambda *args:listener)
+    monkeypatch.setattr(sys,'argv',['companion.server'])
+    monkeypatch.setattr(server.secrets,'token_urlsafe',lambda *args:pytest.fail('Must not generate a code before binding'))
+    server.main()
+    output=capsys.readouterr().out
+    assert 'already in use' in output
+    assert '/pairing' in output
+    assert 'Pairing code (paste' not in output
+    listener.close.assert_called_once()
