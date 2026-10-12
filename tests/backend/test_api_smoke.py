@@ -262,7 +262,7 @@ async def test_browser_run_and_sources():
         assert res_bad.status_code == 422
         assert res_bad.json()["error"]["code"] == "VALIDATION_ERROR"
 
-        # Valid source runs async job
+        # Legacy browser route remains compatible, but native desktop supersedes execution.
         good_run = {
             "asset_id": "asset_laptop_1",
             "source_id": "lenovo_t480",
@@ -275,10 +275,9 @@ async def test_browser_run_and_sources():
         for _ in range(10):
             await asyncio.sleep(0.1)
             j_res = await client.get(f"/api/v1/jobs/{job_id}")
-            if j_res.json()["status"] == "succeeded":
+            if j_res.json()["status"] == "failed":
                 break
 
-        assert j_res.json()["status"] == "succeeded"
-        result = j_res.json()["result"]
-        assert result["source_id"] == "lenovo_t480"
-        assert len(result["trace"]) > 0
+        assert j_res.json()["status"] == "failed"
+        assert j_res.json()["error"]["code"] == "PROVIDER_UNAVAILABLE"
+        assert j_res.json()["result"] is None

@@ -18,9 +18,11 @@ Gemini/Ollama repair and screenshot services; configurable gemma4:31b-cloud; str
 
 Reviewed backend `9b78c6d` and frontend `7df5fa8` against scaffold `4c042a9`. AI `2492dea` was merged into main with integration/QA assignments in `8ad7a20`, already pushed. This delivery extends integrated main.
 
-Remaining confirmed issues: missing maintenance completion timestamp, global active-analysis job lookup, failed live requests replayed against mock state, replaced assets retained in impact, dates accepted without offset/date validation. The AI ORM mapping/diagnostic decoding and explicit failures were integrated previously. Teammate 2 must verify job/case failure behavior and align application-level environment/dependencies.
+Remaining confirmed issues: missing maintenance completion timestamp, failed live requests replayed against mock state, replaced assets retained in impact, dates accepted without offset/date validation. New teammate commit d39af30 added job entity_id and per-case filtering and was merged during this delivery. Existing SQLite databases still need an entity_id migration, and concurrent-case behavior needs verification. The AI ORM mapping/diagnostic decoding and explicit failures were integrated previously. Teammate 2 must align application-level environment/dependencies.
 
-The previous four isolated backend smoke checks passed. Existing repair/browser tests still need explicit provider mocks and unavailable-browser assertions instead of stub-success assumptions. Frontend build and complete app flows remain unverified.
+The teammate's repair/provider-failure tests now use explicit offline provider mocks. The legacy browser test now expects the explicit unavailable job, matching the native amendment. Frontend build and complete app flows remain unverified.
+
+After merging d39af30, all seven backend smoke tests passed against temporary isolated database and upload paths. Combined with the 40 AI/automation checks, this delivery has 47 passing automated checks; real native action acceptance remains pending.
 
 ## Integration sequence
 

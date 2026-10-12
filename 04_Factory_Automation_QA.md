@@ -28,7 +28,7 @@ Owned paths: `backend/app/api/`, `backend/app/models/`, `backend/app/db/`, `back
 Do these in order:
 
 - [ ] Verify merged real AI calls: ORM assets become plain records; diagnostic payload JSON is decoded; provider error codes reach failed jobs; failed analysis resets cases to open. Align backend environment/dependencies with Gemini/Ollama selection.
-- [ ] Persist job-to-case association and filter duplicate analyse requests by case. Test two simultaneous cases plus retry of the first.
+- [ ] Teammate commit d39af30 added job entity_id and case filtering; finish migration for existing SQLite databases and test two simultaneous cases plus retry of the first.
 - [x] Sambhav replaced fake browser success with an explicit unavailable error. Keep fixtures labelled; Teammate 2 still verifies the failed job through the API/UI.
 - [ ] Validate offset-aware ISO dates and normalize UTC for collection, due dates, reservation windows and completion. Reject malformed/naive input with 422; alerts must remain usable.
 - [ ] Fix retained impact after replacement. Record reliable outcome chronology; exclude assets subsequently replaced/retired without relying only on case creation time.
