@@ -1,6 +1,6 @@
 # Remaining work — three-person split
 
-Updated 2026-10-12. Sambhav's service implementation is delivered. The user deferred live Calculator testing until they open it later; native action acceptance is therefore still pending.
+Updated 2026-10-12. **Sambhav implementation: complete. Live desktop acceptance: pending. Full application: pending teammate integration and QA.** The user deferred live Calculator testing until they open it later; native action acceptance is therefore still pending.
 
 | Person | Assignment | Current remaining work |
 |---|---|---|
@@ -10,7 +10,7 @@ Updated 2026-10-12. Sambhav's service implementation is delivered. The user defe
 
 ## Sambhav's delivered work
 
-Gemini/Ollama repair and screenshot services; configurable gemma4:31b-cloud; strict schemas/fixtures; Clef Choice through cf CLI; Windows UIA observer and bounded executor; Gemma planning and host-generated candidates; fresh effect/acceptance verification; Stop and budgets; local desktop runner; privacy-preserving diagnostic collector; service contract and setup docs. Factory assessments cannot expose model-generated machinery repair steps. The fabricated browser service now fails explicitly.
+Gemini/Ollama repair and screenshot services; configurable gemma4:31b-cloud; strict schemas/fixtures; Clef Choice through cf CLI; Windows UIA observer and bounded executor; Gemma-generated ordered workflows and host-generated candidates; live workflow/Clef debug view and inspection-only UI/CLI; fresh effect/acceptance verification; Stop and budgets; local desktop runner; privacy-preserving diagnostic collector; service contract and setup docs. Factory assessments cannot expose model-generated machinery repair steps. The fabricated browser service now fails explicitly.
 
 43 automated checks pass: 18 AI and 25 automation/collector checks. Tests cover malformed choices, unknown/stale controls, unavailable providers, false completion, no effect, Stop (including interrupted input traces), budgets, factory escalation, and actual collector import through an isolated API database. Live synthetic Clef inference succeeded through CLI and Python; live Gemma returned a valid plan against supplied synthetic controls. None of those provider checks is a successful native action trace.
 

@@ -1,8 +1,8 @@
 # Repair Before Replace â€” Project Structure
 
-> Current team plan: Sambhav plus two teammates. Follow [Sambhav â€” AI and Desktop](01_Sambhav_AI_Desktop.md), [Two teammate QA assignments](04_Factory_Automation_QA.md), and [remaining work](docs/REMAINING_WORK.md). The four-person ownership/workflow below is the original scaffold plan and is superseded by these assignments. The user selected native Windows computer use with Cloudflare Clef; the desktop contract still needs to be added to the SRS.
+> Current team plan: Sambhav plus two teammates. Follow [Sambhav â€” AI and Desktop](01_Sambhav_AI_Desktop.md), [Two teammate QA assignments](04_Factory_Automation_QA.md), and [remaining work](docs/REMAINING_WORK.md). The four-person ownership/workflow below is the original scaffold plan and is superseded by these assignments. The user selected native Windows computer use with Cloudflare Clef; the native desktop contract is in SRS v1.1. Sambhav implementation is complete; live desktop acceptance and teammate app integration remain pending.
 
-This repository is organised for four people building the five-hour MVP described in [00_SRS.md](00_SRS.md). The folders are scaffolded; application code and dependency configuration still need to be implemented. `.gitkeep` files preserve empty folders in Git.
+Historical scaffold description: this repository was organised for four people building the five-hour MVP described in [00_SRS.md](00_SRS.md). Application code is now present; current completion and verification status is tracked in docs/REMAINING_WORK.md. `.gitkeep` files preserve empty folders in Git.
 
 ## Directory layout
 

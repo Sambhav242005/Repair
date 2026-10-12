@@ -14,7 +14,7 @@ Install/start Ollama, run `ollama signin`, then `ollama run gemma4:31b-cloud` to
 
 Cloud responses use prompt-requested JSON with local Pydantic validation and one malformed-output retry because Ollama Cloud currently does not enforce structured output. For a local model such as `gemma4:31b`, the adapter additionally sends the JSON schema in `format`. There is no automatic provider fallback. No new dependency is required.
 
-Verified through the running local gateway on 2026-10-12: `gemma4:31b-cloud` returned a valid Analysis for a synthetic slow-laptop case and valid ScreenshotAdvice for a blank test PNG, explicitly reporting unreadable controls. The adapter strips a single enclosing JSON Markdown fence; it does not extract JSON from mixed prose. All 17 offline tests pass. These smoke checks do not establish diagnostic accuracy or browser integration.
+Verified through the running local gateway on 2026-10-12: `gemma4:31b-cloud` returned a valid Analysis for a synthetic slow-laptop case and valid ScreenshotAdvice for a blank test PNG, explicitly reporting unreadable controls. The adapter strips a single enclosing JSON Markdown fence; it does not extract JSON from mixed prose. All 18 AI tests pass. Native desktop workflow/selection, debug mode and acceptance status are documented in ../automation/README.md. These smoke checks do not establish diagnostic accuracy or successful native desktop execution.
 
 References: https://docs.ollama.com/api/chat, https://docs.ollama.com/api/authentication, https://docs.ollama.com/capabilities/structured-outputs, https://ollama.com/library/gemma4:31b-cloud.
 
