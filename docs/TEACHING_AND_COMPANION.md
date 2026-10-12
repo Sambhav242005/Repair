@@ -4,6 +4,8 @@
 
 Open **Class & lab planning**. Upload a text PDF, DOCX, UTF-8 TXT, Markdown or CSV (5 MB maximum), or paste your syllabus. Scanned PDFs require OCR before upload. The document reader runs locally; it does not send documents to an AI provider.
 
+For a quick walkthrough, click **Try a syllabus demo**. It loads four Computer Networks topics totaling eight lectures, Monday/Wednesday class times, a sample holiday, and a six-month deadline. The preview is created automatically; classes and reminders are published only if you click **Save classes and enable reminders**.
+
 Choose **Organize topics with AI** to send the extracted syllabus text to the configured provider (Ollama or Gemini). Source excerpts are validated against the document. Lecture counts and preparation activities are suggestions: review and edit every topic. Alternatively use one topic per line and edit the counts manually.
 
 Set the course/section, teacher, semester dates, weekly lecture slots, holiday/exam dates and reminder lead time. Calendar upload recognizes ISO dates (`YYYY-MM-DD`); manually correct any dates it cannot recognize. Scheduling uses Asia/Kolkata, excludes holiday dates, checks slot overlap, and shows spare or missing slots. It will not publish a plan that cannot finish the syllabus. Times already booked for the same teacher reject publication atomically.

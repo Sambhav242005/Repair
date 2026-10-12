@@ -37,6 +37,8 @@ Updated 2026-10-12. Sambhav owns the remaining acceptance work. Teammate integra
 - [x] Replace iFixit branding with software/equipment troubleshooting language.
 - [x] Upload text PDF, DOCX, TXT, Markdown or CSV; read text locally and allow manual editing.
 - [x] AI topic organization with exact source excerpts and editable lecture/preparation estimates.
+- [x] One-click syllabus demo with eight lectures, six-month dates, weekly class times, a sample holiday, and an automatic draft preview.
+- [x] Fix report form diagnostic ownership when equipment changes, including late upload responses; live ThinkPad-to-Dell regression saved a clearly labelled QA case successfully.
 - [x] Semester dates, weekly timetable slots, reviewed holiday dates, capacity warning and deterministic lecture allocation.
 - [x] Save reviewed plans atomically as class sessions; detect identical plans, reject teacher conflicts and avoid duplicate publication.
 - [x] Topic/preparation reminders in the existing alert bell with 15-minute, one-hour or one-day lead times.

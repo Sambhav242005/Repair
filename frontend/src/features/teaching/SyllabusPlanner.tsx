@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import { formatKolkata } from '../../utils/datetime';
+import { getDefaultDatetimeLocal } from '../../utils/datetime';
+import { syllabusDemo } from './syllabusDemo';
 
 type Topic = { title: string; lectures: number; preparation: string; source_excerpt?: string };
 type Slot = { weekday: number; starts: string; minutes: number };
@@ -50,6 +52,14 @@ export function SyllabusPlanner({ onPublished }: Props) {
   };
   return <section className="syllabus-planner" aria-labelledby="syllabus-heading">
     <header><p className="eyebrow">SYLLABUS → LECTURES → REMINDERS</p><h2 id="syllabus-heading">Finish your syllabus, one class at a time</h2><p>Upload your course document, review the topics, and fit them around your timetable and holidays. Dates use Asia/Kolkata.</p></header>
+    <div className="planner-actions"><button type="button" className="btn-secondary" disabled={!!busy} onClick={()=>void perform('Preparing the demo…',async()=>{
+      const demo=syllabusDemo(getDefaultDatetimeLocal().slice(0,10));
+      setText(demo.topics.map(topic=>topic.title).join('\n'));setTopics(demo.topics);
+      setCourse(demo.course);setAssignee(demo.assignee);setStart(demo.start_date);setEnd(demo.end_date);
+      setSlots(demo.slots);setHolidays(demo.holidays.join('\n'));setReminder(demo.reminder_minutes);
+      setPlan(await apiClient.previewTeachingPlan(demo));loadPlans();
+      setNotice('Demo preview ready: 8 lectures, Monday/Wednesday at 09:00, with the first date excluded as a sample holiday. Scroll to step 3 to see the schedule. No demo classes or reminders have been published.');
+    })}>Try a syllabus demo</button><p className="field-hint">Loads a sample six-month course and schedule preview. You can change the topics, dates, and holidays before saving.</p></div>
     {error && <p role="alert" className="planner-error">{error}</p>}
     {(notice || busy) && <p role="status" className="planner-notice">{busy || notice}</p>}
     {apiClient.getMode() !== 'live' && <p className="planner-notice">Switch to Live data to upload documents and save teaching plans.</p>}

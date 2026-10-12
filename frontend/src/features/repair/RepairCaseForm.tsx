@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Asset, CreateCaseInput } from '../../types';
 import { Upload, FileText, Send, CheckCircle2 } from 'lucide-react';
 import { apiClient } from '../../api/client';
@@ -21,7 +21,12 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [uploadedScreenshotId, setUploadedScreenshotId] = useState<string | null>(null);
   const [diagnosticFile, setDiagnosticFile] = useState<File | null>(null);
-  const [uploadedDiagnosticId, setUploadedDiagnosticId] = useState<string | null>(null);
+  const [uploadedDiagnostic, setUploadedDiagnostic] = useState<{id: string; asset_id: string} | null>(null);
+  const attachmentEpoch = useRef(0);
+  const currentAssetId = useRef(assetId);
+  const diagnosticInput = useRef<HTMLInputElement>(null);
+  const screenshotInput = useRef<HTMLInputElement>(null);
+  const [attachmentNotice, setAttachmentNotice] = useState('');
   const [uploading, setUploading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -30,6 +35,23 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
       setAssetId(selectedAssetId);
     }
   }, [selectedAssetId]);
+
+  React.useEffect(() => {
+    if (currentAssetId.current === assetId) return;
+    currentAssetId.current = assetId;
+    attachmentEpoch.current += 1;
+    if (uploadedDiagnostic || uploadedScreenshotId || uploading) {
+      setAttachmentNotice('Equipment changed. Previous attachments were cleared; attach reports for the selected device if needed. Your problem description was kept.');
+    }
+    setUploadedDiagnostic(null);
+    setUploadedScreenshotId(null);
+    setDiagnosticFile(null);
+    setScreenshotFile(null);
+    if (diagnosticInput.current) diagnosticInput.current.value = '';
+    if (screenshotInput.current) screenshotInput.current.value = '';
+    // Attachment ownership changes only when equipment changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assetId]);
 
   const handleScreenshotChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,10 +63,13 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
     }
 
     setScreenshotFile(file);
+    setUploadedScreenshotId(null);
+    const epoch = attachmentEpoch.current;
+    const owner = assetId;
     setUploading(true);
     try {
       const res = await apiClient.uploadScreenshot(file);
-      setUploadedScreenshotId(res.id);
+      if (epoch === attachmentEpoch.current && owner === currentAssetId.current) setUploadedScreenshotId(res.id);
     } catch (err: any) {
       onError(err);
     } finally {
@@ -62,6 +87,9 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
     }
 
     setDiagnosticFile(file);
+    setUploadedDiagnostic(null);
+    const epoch = attachmentEpoch.current;
+    const owner = assetId;
     setUploading(true);
     try {
       const text = await file.text();
@@ -71,9 +99,9 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
       }
       const diag = await apiClient.createDiagnostic({
         ...parsed,
-        asset_id: assetId,
+        asset_id: owner,
       });
-      setUploadedDiagnosticId(diag.id);
+      if (epoch === attachmentEpoch.current && owner === currentAssetId.current) setUploadedDiagnostic({id:diag.id,asset_id:diag.asset_id});
     } catch (err: any) {
       onError(err);
     } finally {
@@ -98,14 +126,17 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
         asset_id: assetId,
         symptoms: symptoms.trim(),
         screenshot_id: uploadedScreenshotId,
-        diagnostic_id: uploadedDiagnosticId,
+        diagnostic_id: uploadedDiagnostic?.asset_id === assetId ? uploadedDiagnostic.id : null,
       };
       const created = await apiClient.createCase(input);
       setSymptoms('');
       setScreenshotFile(null);
       setUploadedScreenshotId(null);
       setDiagnosticFile(null);
-      setUploadedDiagnosticId(null);
+      setUploadedDiagnostic(null);
+      setAttachmentNotice('');
+      if (diagnosticInput.current) diagnosticInput.current.value = '';
+      if (screenshotInput.current) screenshotInput.current.value = '';
       onCaseCreated(created.id);
     } catch (err: any) {
       onError(err);
@@ -115,10 +146,14 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
   };
 
   const loadSampleDiagnostics = async () => {
+    if (!assetId) return;
+    const epoch = attachmentEpoch.current;
+    const owner = assetId;
+    setUploadedDiagnostic(null);
     setUploading(true);
     try {
       const sample = {
-        asset_id: assetId || 'asset_laptop_1',
+        asset_id: owner,
         collected_at: new Date().toISOString(),
         os: { name: 'Ubuntu Linux', version: '24.04 LTS' },
         memory: { total_bytes: 16777216000, available_bytes: 1887436800 },
@@ -127,8 +162,10 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
         collector_version: '1.0.0-cli-safe',
       };
       const diag = await apiClient.createDiagnostic(sample);
-      setUploadedDiagnosticId(diag.id);
-      setDiagnosticFile(new File([JSON.stringify(sample)], 'diagnostics_sample.json'));
+      if (epoch === attachmentEpoch.current && owner === currentAssetId.current) {
+        setUploadedDiagnostic({id:diag.id,asset_id:diag.asset_id});
+        setDiagnosticFile(new File([JSON.stringify(sample)], 'diagnostics_sample.json'));
+      }
     } catch (err: any) {
       onError(err);
     } finally {
@@ -168,6 +205,7 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
             value={assetId}
             onChange={(e) => setAssetId(e.target.value)}
             required
+            disabled={submitting}
             style={{ fontWeight: 600 }}
           >
             {assets.map((a) => (
@@ -178,6 +216,7 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
           </select>
         </div>
 
+        {attachmentNotice && <p role="status" className="planner-notice">{attachmentNotice}</p>}
         {/* Symptoms Textarea */}
         <div>
           <label htmlFor="textarea-symptoms" style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px' }}>
@@ -211,6 +250,7 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
               type="button"
               id="btn-use-sample-diag"
               onClick={loadSampleDiagnostics}
+              disabled={uploading || submitting || !assetId}
               style={{ fontSize: '11px', color: '#0071ce', fontWeight: 700 }}
             >
               + Use Sample Data
@@ -219,15 +259,17 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
 
           <input
             id="input-diagnostic-json"
+            ref={diagnosticInput}
             type="file"
             accept=".json,application/json"
             onChange={handleDiagnosticUpload}
+            disabled={uploading || submitting || !assetId}
             style={{ fontSize: '12px', padding: '6px' }}
           />
 
-          {uploadedDiagnosticId && (
+          {uploadedDiagnostic?.asset_id === assetId && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#059669', marginTop: '8px', fontWeight: 600 }}>
-              <CheckCircle2 size={14} /> Attached Diagnostic ID: {uploadedDiagnosticId}
+              <CheckCircle2 size={14} /> Diagnostic attached to {assets.find(asset => asset.id === assetId)?.name || 'this equipment'}
             </div>
           )}
         </div>
@@ -249,9 +291,11 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
 
           <input
             id="input-screenshot-file"
+            ref={screenshotInput}
             type="file"
             accept="image/png,image/jpeg"
             onChange={handleScreenshotChange}
+            disabled={uploading || submitting}
             style={{ fontSize: '12px', padding: '6px' }}
           />
 
