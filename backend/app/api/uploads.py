@@ -20,7 +20,8 @@ async def upload_screenshot(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    # Check mime type
+    # Check the declared type before reading; accept only formats we can
+    # verify from the actual file bytes below.
     content_type = file.content_type or ""
     if content_type.lower() not in ALLOWED_MIME_TYPES:
         raise ValidationException(
@@ -28,14 +29,22 @@ async def upload_screenshot(
             details={"allowed": list(ALLOWED_MIME_TYPES)},
         )
 
-    # Read content and enforce size limit
-    content = await file.read()
+    # Read at most one byte beyond the limit so an oversized upload cannot
+    # force the API to buffer an arbitrary amount of data in memory.
+    content = await file.read(MAX_SCREENSHOT_BYTES + 1)
+    await file.close()
     size_bytes = len(content)
     if size_bytes > MAX_SCREENSHOT_BYTES:
         raise ValidationException(
             f"Screenshot size ({size_bytes} bytes) exceeds maximum limit of 5 MB (5,242,880 bytes).",
             details={"size_bytes": size_bytes, "max_bytes": MAX_SCREENSHOT_BYTES},
         )
+    if not content:
+        raise ValidationException("Screenshot file is empty.")
+
+    signature = b"\x89PNG\r\n\x1a\n" if content_type.lower() == "image/png" else b"\xff\xd8\xff"
+    if not content.startswith(signature):
+        raise ValidationException("Screenshot bytes do not match the declared PNG or JPEG format.")
 
     # Store under generated filename (never interpret client filename as path)
     screenshot_id = f"screenshot_{uuid.uuid4().hex[:12]}"
@@ -43,17 +52,25 @@ async def upload_screenshot(
     safe_filename = f"{screenshot_id}{extension}"
     target_path = os.path.join(UPLOAD_DIR, safe_filename)
 
-    with open(target_path, "wb") as f:
-        f.write(content)
+    try:
+        with open(target_path, "wb") as f:
+            f.write(content)
 
-    model = ScreenshotModel(
-        id=screenshot_id,
-        file_path=target_path,
-        mime_type=content_type,
-        size_bytes=size_bytes,
-    )
-    db.add(model)
-    db.commit()
+        model = ScreenshotModel(
+            id=screenshot_id,
+            file_path=target_path,
+            mime_type=content_type,
+            size_bytes=size_bytes,
+        )
+        db.add(model)
+        db.commit()
+    except Exception:
+        db.rollback()
+        try:
+            os.remove(target_path)
+        except OSError:
+            pass
+        raise
 
     return ScreenshotUploadResponse(
         id=screenshot_id,

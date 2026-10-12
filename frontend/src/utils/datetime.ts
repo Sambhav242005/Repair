@@ -43,12 +43,20 @@ export function formatKolkataTimeOnly(isoString: string | null | undefined): str
 }
 
 /**
- * Converts a browser datetime-local input string (YYYY-MM-DDTHH:mm) into an ISO string.
- * Note: input value is in local system time, so we convert it cleanly to an ISO 8601 UTC string.
+ * Converts a datetime-local wall time entered by a faculty member in Asia/Kolkata
+ * to a UTC ISO string. The browser's own timezone must not affect the chosen time.
  */
 export function datetimeLocalToIso(val: string): string {
   if (!val) return '';
-  const d = new Date(val);
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(val);
+  if (!match) throw new RangeError('Expected a date and time in YYYY-MM-DDTHH:mm format.');
+  const [, year, month, day, hour, minute] = match.map(Number);
+  const wallClockMillis = Date.UTC(year, month - 1, day, hour, minute);
+  const wallClock = new Date(wallClockMillis);
+  if (wallClock.getUTCFullYear() !== year || wallClock.getUTCMonth() !== month - 1 || wallClock.getUTCDate() !== day || wallClock.getUTCHours() !== hour || wallClock.getUTCMinutes() !== minute) {
+    throw new RangeError('Date and time is not valid.');
+  }
+  const d = new Date(wallClockMillis - 330 * 60 * 1000);
   return d.toISOString();
 }
 
@@ -57,13 +65,12 @@ export function datetimeLocalToIso(val: string): string {
  */
 export function getDefaultDatetimeLocal(offsetHours = 1): string {
   const d = new Date(Date.now() + offsetHours * 3600 * 1000);
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  const year = d.getFullYear();
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const hours = pad(d.getHours());
-  const minutes = pad(d.getMinutes());
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(d);
+  const part = (type: string) => parts.find((item) => item.type === type)?.value || '';
+  return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`;
 }
 
 export function formatBytes(bytes: number | null | undefined): string {

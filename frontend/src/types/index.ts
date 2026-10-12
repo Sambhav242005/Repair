@@ -278,14 +278,27 @@ export interface BrowserResult {
 
 // --- Native Desktop Session Types (Clef + UI Automation) ---
 export type DesktopAppId = 'calculator' | 'settings' | 'taskmgr';
-export type DesktopSessionStatus = 'idle' | 'running' | 'stopped' | 'completed' | 'failed';
+export type DesktopSessionStatus = 'running' | 'needs_approval' | 'needs_user' | 'stopped' | 'completed' | 'failed';
+
+export interface DesktopWindow {
+  handle: number;
+  process_id: number;
+  application: 'Calculator' | 'TaskManager' | 'Settings';
+}
+
+export interface DesktopDebugEvent {
+  at: string;
+  event: string;
+  data?: Record<string, unknown>;
+  [key: string]: unknown;
+}
 
 export interface DesktopTraceStep {
   step_number: number;
   timestamp: string;
   control_name: string;
   control_type: string;
-  action: 'invoke' | 'focus' | 'type_text' | 'verify';
+  action: 'invoke' | 'select' | 'text' | 'key' | 'scroll' | 'wait' | 'ask_user' | 'stop';
   value?: string | null;
   verified_state?: string | null;
   status: 'succeeded' | 'failed' | 'stopped';
@@ -297,11 +310,23 @@ export interface DesktopSession {
   app_title: string;
   goal: string;
   status: DesktopSessionStatus;
+  stage: 'inspection' | 'execution';
+  message: string;
+  window: DesktopWindow;
+  proposed_action?: Record<string, unknown> | null;
+  debug_events: DesktopDebugEvent[];
+  approval_scope: { max_actions: number; deadline_seconds: number; inspect_only: boolean };
   started_at: string;
   stopped_at?: string | null;
   steps: DesktopTraceStep[];
   verified_result?: string | null;
   error?: string | null;
+}
+
+export interface DesktopSessionCreate {
+  window: DesktopWindow;
+  goal: string;
+  acceptance: { automation_id: string; name_equals: string };
 }
 
 export interface ImpactSummary {

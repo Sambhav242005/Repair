@@ -150,10 +150,10 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
     >
       <div style={{ marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
         <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>
-          Open a Repair Investigation
+          Report an Equipment Problem
         </h2>
         <p style={{ fontSize: '13px', color: '#64748b' }}>
-          Document equipment symptoms to generate a step-by-step iFixit guide.
+          Describe what happened so the helper can prepare draft troubleshooting guidance.
         </p>
       </div>
 
@@ -161,7 +161,7 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
         {/* Asset Selection */}
         <div>
           <label htmlFor="select-case-asset" style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px' }}>
-            Target Equipment / Device *
+            Equipment *
           </label>
           <select
             id="select-case-asset"
@@ -181,7 +181,7 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
         {/* Symptoms Textarea */}
         <div>
           <label htmlFor="textarea-symptoms" style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '6px' }}>
-            Fault Symptoms &amp; Observed Behavior *
+            What happened? *
           </label>
           <textarea
             id="textarea-symptoms"
@@ -274,7 +274,7 @@ export const RepairCaseForm: React.FC<RepairCaseFormProps> = ({
             'Opening Case...'
           ) : (
             <>
-              <Send size={16} /> Open Investigation
+              <Send size={16} /> Save Problem Report
             </>
           )}
         </button>

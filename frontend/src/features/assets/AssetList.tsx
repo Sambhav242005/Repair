@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Asset, AssetStatus, CreateAssetInput, UpdateAssetInput } from '../../types';
-import { Plus, Edit2, Laptop, Settings, Cpu, HardDrive } from 'lucide-react';
+import { Plus, Edit2, Laptop, Settings, Cpu } from 'lucide-react';
 
 interface AssetListProps {
   assets: Asset[];
@@ -161,22 +161,6 @@ export const AssetList: React.FC<AssetListProps> = ({
                 </div>
               </div>
 
-              {asset.mass_kg !== null && asset.mass_kg !== undefined && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    marginTop: '8px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    color: '#64748b',
-                  }}
-                >
-                  <HardDrive size={12} />
-                  <span>Hardware mass: {asset.mass_kg} kg</span>
-                </div>
-              )}
             </div>
           );
         })}
@@ -212,7 +196,6 @@ const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, onSave }
   const [manufacturer, setManufacturer] = useState(initialAsset?.manufacturer || '');
   const [model, setModel] = useState(initialAsset?.model || '');
   const [status, setStatus] = useState<AssetStatus>(initialAsset?.status || 'operational');
-  const [massKg, setMassKg] = useState<string>(initialAsset?.mass_kg?.toString() || '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -231,7 +214,6 @@ const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, onSave }
         manufacturer: manufacturer.trim() || null,
         model: model.trim() || null,
         status,
-        mass_kg: massKg ? parseFloat(massKg) : null,
       });
     } catch (err: any) {
       setError(err?.error?.message || 'Failed to save asset');
@@ -343,20 +325,6 @@ const AssetModal: React.FC<AssetModalProps> = ({ initialAsset, onClose, onSave }
                 placeholder="e.g. T480 / VF-2SS"
               />
             </div>
-          </div>
-
-          <div>
-            <label style={{ fontSize: '12px', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '4px' }}>
-              Mass in kg (Used for verified retained material metrics)
-            </label>
-            <input
-              id="input-asset-mass"
-              type="number"
-              step="0.01"
-              value={massKg}
-              onChange={(e) => setMassKg(e.target.value)}
-              placeholder="e.g. 1.65"
-            />
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>

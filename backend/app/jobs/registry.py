@@ -37,6 +37,11 @@ class JobRegistry:
                     "message": "Server restarted before job completed. Please retry the request.",
                 })
                 j.updated_at = utc_now_iso()
+                if j.kind == "case_analysis" and j.entity_id:
+                    from backend.app.db.models import CaseModel
+                    case = db.query(CaseModel).filter(CaseModel.id == j.entity_id).first()
+                    if case and case.status == "analysing":
+                        case.status = "open"
             if unfinished:
                 db.commit()
                 logger.info(f"Marked {len(unfinished)} unfinished jobs as failed.")
@@ -47,7 +52,7 @@ class JobRegistry:
             db.close()
 
     @staticmethod
-    def create_job(kind: str, db: Session, entity_id: Optional[str] = None) -> JobModel:
+    def create_job(kind: str, db: Session, entity_id: Optional[str] = None, *, commit: bool = True) -> JobModel:
         job_id = f"job_{uuid.uuid4().hex[:12]}"
         now = utc_now_iso()
         job = JobModel(
@@ -61,8 +66,11 @@ class JobRegistry:
             updated_at=now,
         )
         db.add(job)
-        db.commit()
-        db.refresh(job)
+        if commit:
+            db.commit()
+            db.refresh(job)
+        else:
+            db.flush()
         return job
 
     @staticmethod

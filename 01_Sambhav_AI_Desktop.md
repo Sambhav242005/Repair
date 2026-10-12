@@ -1,6 +1,6 @@
 # Sambhav — AI, Clef and native Windows computer use
 
-Updated 2026-10-12. **Implementation complete; live desktop acceptance pending.** The full application still needs the two teammates' integration and QA work in [04_Factory_Automation_QA.md](04_Factory_Automation_QA.md).
+Updated 2026-10-12. **Implementation and integration are delivered; live desktop acceptance is pending.** The current single-owner checklist is [docs/REMAINING_WORK.md](docs/REMAINING_WORK.md).
 
 ## Completed implementation
 
@@ -17,7 +17,7 @@ Updated 2026-10-12. **Implementation complete; live desktop acceptance pending.*
 
 ## Verification completed
 
-18 AI tests, 25 automation/collector tests and seven isolated backend smoke tests passed: **50 automated checks** across the integrated delivery. Live Gemma/Clef workflow inspection used labelled synthetic Calculator controls; Clef selected the Seven invoke with probability 0.892 and `input_executed: false`. This verifies provider selection, not actual PC input. See `fixtures/automation/workflow_debug_result.json`.
+Latest integrated verification: backend `pytest -q` — **61 passed** (one Starlette deprecation warning); frontend `pnpm test` — **10 passed**; frontend `pnpm build` — passed. Live Gemma/Clef workflow inspection used labelled synthetic Calculator controls; Clef selected the Seven invoke with probability 0.892 and `input_executed: false`. That verifies provider selection, not actual PC input. See `fixtures/automation/workflow_debug_result.json`.
 
 ## Acceptance still pending
 
@@ -37,6 +37,6 @@ python -m scripts.desktop_debug --sample
 
 The first command inspects a user-selected open application. The second uses sample labels with real providers. Both execute no input. For actual execution, turn off Inspect only in the runner after selecting the app and setting the exact acceptance condition.
 
-[Automation setup and policy](backend/app/services/automation/README.md) explains the supported operations and typed local session contract. Sambhav owns `backend/app/services/ai/`, `backend/app/services/automation/`, the collector/desktop scripts, corresponding tests and fixtures. Services write no SQLite records.
+[Automation setup and policy](backend/app/services/automation/README.md) explains the supported operations and typed local session contract. The current backend API persists native desktop sessions and debug history; the services retain bounded control over native input.
 
-Teammate 1 owns React desktop integration and frontend QA. Teammate 2 owns session lifecycle/persistence and any agreed local-only API, backend/factory fixes and integration QA. Their unfinished work is not part of Sambhav's completed service implementation. See [remaining work](docs/REMAINING_WORK.md).
+Earlier teammate assignments are historical and are no longer open work. See [04_Factory_Automation_QA.md](04_Factory_Automation_QA.md) for the completed integration areas and [remaining work](docs/REMAINING_WORK.md) for the single current owner and pending live PC acceptance.

@@ -33,12 +33,12 @@ describe('Factory Scheduling & Contract Rules Tests', () => {
   });
 
   it('allows back-to-back reservation windows [start, end) without conflict', () => {
-    // maint_1 ends at 15:30Z. Back-to-back starts at 15:30Z.
+    // maint_1 ends at 15:30Z and lesson_1 starts at 16:00Z. This is adjacent to both.
     const prod = mockEngine.createProduction({
       asset_id: 'asset_machine_1',
       title: 'Back-to-back Batch #100',
       starts_at: '2026-10-12T15:30:00Z',
-      ends_at: '2026-10-12T17:00:00Z',
+      ends_at: '2026-10-12T16:00:00Z',
       quantity: 25,
     });
     expect(prod).toBeDefined();
@@ -92,16 +92,8 @@ describe('Factory Scheduling & Contract Rules Tests', () => {
     }
   });
 
-  it('supports Native Desktop Session start and stop interrupt controls', () => {
-    const session = mockEngine.startDesktopSession('calculator', 'Perform 42 + 58');
-    expect(session.id).toBeDefined();
-    expect(session.status).toBe('running');
-    expect(session.app_id).toBe('calculator');
-
-    // Test immediate Stop control
-    const stopped = mockEngine.stopDesktopSession(session.id);
-    expect(stopped.status).toBe('stopped');
-    expect(stopped.stopped_at).toBeDefined();
-    expect(stopped.steps.some((s) => s.status === 'stopped')).toBe(true);
+  it('does not simulate native desktop input in the sample engine', () => {
+    expect((mockEngine as any).startDesktopSession).toBeUndefined();
+    expect((mockEngine as any).getDesktopSession).toBeUndefined();
   });
 });

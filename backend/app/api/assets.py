@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from backend.app.core.exceptions import NotFoundException
-from backend.app.db.database import get_db
+from backend.app.db.database import begin_write_transaction, get_db
 from backend.app.db.models import AlertModel, AssetModel, ProductionModel, utc_now_iso
 from backend.app.models.schemas import Asset, AssetCreate, AssetUpdate, ListEnvelope
 
@@ -45,6 +45,7 @@ def create_asset(payload: AssetCreate, db: Session = Depends(get_db)):
 
 @router.patch("/{asset_id}", response_model=Asset)
 def update_asset(asset_id: str, payload: AssetUpdate, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     model = db.query(AssetModel).filter(AssetModel.id == asset_id).first()
     if not model:
         raise NotFoundException(f"Asset '{asset_id}' not found.")
@@ -57,6 +58,9 @@ def update_asset(asset_id: str, payload: AssetUpdate, db: Session = Depends(get_
             if hasattr(value, "value"):
                 value = value.value
             setattr(model, key, value)
+
+    if update_dict.get("status") == "retired" and old_status != "retired":
+        model.retired_at = utc_now_iso()
 
     # SRS §9: "Changing an asset to faulty/maintenance raises equipment_unavailable
     # for existing future or active production jobs; never silently cancel jobs."

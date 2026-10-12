@@ -1,11 +1,11 @@
 import json
 import uuid
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from backend.app.core.exceptions import NotFoundException, ValidationException
 from backend.app.db.database import get_db
 from backend.app.db.models import AssetModel, DiagnosticModel
-from backend.app.models.schemas import Diagnostic, DiagnosticCreate
+from backend.app.models.schemas import Diagnostic, DiagnosticCreate, ListEnvelope
 
 router = APIRouter(prefix="/diagnostics", tags=["Diagnostics"])
 
@@ -23,6 +23,15 @@ def model_to_schema(model: DiagnosticModel) -> Diagnostic:
         cpu=payload["cpu"],
         collector_version=model.collector_version,
     )
+
+
+@router.get("", response_model=ListEnvelope[Diagnostic])
+def list_diagnostics(asset_id: str | None = Query(None), db: Session = Depends(get_db)):
+    query = db.query(DiagnosticModel)
+    if asset_id:
+        query = query.filter(DiagnosticModel.asset_id == asset_id)
+    records = query.order_by(DiagnosticModel.collected_at.desc()).all()
+    return ListEnvelope(items=[model_to_schema(record) for record in records], total=len(records))
 
 @router.post("", response_model=Diagnostic, status_code=status.HTTP_201_CREATED)
 def import_diagnostic(payload: DiagnosticCreate, db: Session = Depends(get_db)):

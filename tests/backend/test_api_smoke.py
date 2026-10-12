@@ -7,7 +7,12 @@ from backend.app.main import app
 from backend.app.db.seed import seed_database
 
 @pytest.fixture(autouse=True)
-def setup_db():
+def setup_db(tmp_path, monkeypatch):
+    from backend.app.api import uploads
+
+    upload_dir = tmp_path / "screenshots"
+    upload_dir.mkdir()
+    monkeypatch.setattr(uploads, "UPLOAD_DIR", str(upload_dir))
     seed_database(reset=True)
 
 @pytest.mark.asyncio
@@ -48,6 +53,16 @@ async def test_assets_crud():
         res_patch = await client.patch(f"/api/v1/assets/{asset_id}", json={"mass_kg": 55.5})
         assert res_patch.status_code == 200
         assert res_patch.json()["mass_kg"] == 55.5
+
+@pytest.mark.asyncio
+async def test_diagnostics_list_can_filter_by_equipment():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/diagnostics", params={"asset_id": "asset_laptop_1"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] >= 1
+    assert all(item["asset_id"] == "asset_laptop_1" for item in data["items"])
 
 @pytest.mark.asyncio
 async def test_screenshot_upload_validation():

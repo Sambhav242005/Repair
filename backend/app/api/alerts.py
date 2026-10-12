@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from backend.app.core.exceptions import NotFoundException
-from backend.app.db.database import get_db
+from backend.app.db.database import begin_write_transaction, get_db
 from backend.app.db.models import (
     AlertModel,
     LessonModel,
@@ -13,12 +13,12 @@ from backend.app.db.models import (
     utc_now_iso,
 )
 from backend.app.models.schemas import Alert, ListEnvelope
+from backend.app.utils.datetime import parse_offset_datetime
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
 def parse_iso(dt_str: str) -> datetime:
-    cleaned = dt_str.replace("Z", "+00:00")
-    return datetime.fromisoformat(cleaned)
+    return parse_offset_datetime(dt_str)
 
 def model_to_schema(model: AlertModel) -> Alert:
     return Alert(
@@ -38,6 +38,10 @@ def evaluate_and_persist_alerts(db: Session, now: Optional[datetime] = None):
     and persists alerts with deduplication on (entity_type, entity_id, kind).
     """
     now_dt = now or datetime.now(timezone.utc)
+    if now_dt.tzinfo is None or now_dt.utcoffset() is None:
+        raise ValueError("Alert evaluation time must include a UTC offset.")
+    now_dt = now_dt.astimezone(timezone.utc)
+    begin_write_transaction(db)
 
     # 1. Evaluate Maintenance
     # due_soon: due_at - 24h to due_at
@@ -85,7 +89,7 @@ def evaluate_and_persist_alerts(db: Session, now: Optional[datetime] = None):
                     kind=kind,
                     severity=severity,
                     message=msg,
-                    triggered_at=utc_now_iso(),
+                    triggered_at=now_dt.astimezone(timezone.utc).isoformat(),
                 )
                 db.add(alert)
 
@@ -136,7 +140,7 @@ def evaluate_and_persist_alerts(db: Session, now: Optional[datetime] = None):
                     kind=kind,
                     severity=severity,
                     message=msg,
-                    triggered_at=utc_now_iso(),
+                    triggered_at=now_dt.astimezone(timezone.utc).isoformat(),
                 )
                 db.add(alert)
 
@@ -187,7 +191,7 @@ def evaluate_and_persist_alerts(db: Session, now: Optional[datetime] = None):
                     kind=kind,
                     severity=severity,
                     message=msg,
-                    triggered_at=utc_now_iso(),
+                    triggered_at=now_dt.astimezone(timezone.utc).isoformat(),
                 )
                 db.add(alert)
 
@@ -211,6 +215,7 @@ def list_alerts(
 
 @router.post("/{alert_id}/acknowledge", response_model=Alert)
 def acknowledge_alert(alert_id: str, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     model = db.query(AlertModel).filter(AlertModel.id == alert_id).first()
     if not model:
         raise NotFoundException(f"Alert '{alert_id}' not found.")

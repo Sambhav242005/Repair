@@ -9,7 +9,7 @@ from backend.app.core.exceptions import (
     NotFoundException,
     ValidationException,
 )
-from backend.app.db.database import SessionLocal, get_db
+from backend.app.db.database import SessionLocal, begin_write_transaction, get_db
 from backend.app.db.models import (
     AssetModel,
     CaseModel,
@@ -56,6 +56,7 @@ def model_to_schema(model: CaseModel) -> Case:
 
 @router.post("", response_model=Case, status_code=status.HTTP_201_CREATED)
 def create_case(payload: CaseCreate, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     # Validate asset
     asset = db.query(AssetModel).filter(AssetModel.id == payload.asset_id).first()
     if not asset:
@@ -66,6 +67,8 @@ def create_case(payload: CaseCreate, db: Session = Depends(get_db)):
         screenshot = db.query(ScreenshotModel).filter(ScreenshotModel.id == payload.screenshot_id).first()
         if not screenshot:
             raise NotFoundException(f"Screenshot '{payload.screenshot_id}' not found.")
+        if not os.path.isfile(screenshot.file_path) or screenshot.size_bytes > 5 * 1024 * 1024:
+            raise ValidationException(f"Screenshot '{payload.screenshot_id}' is no longer available as a valid upload.")
 
     # Validate diagnostic if provided
     if payload.diagnostic_id:
@@ -172,6 +175,7 @@ async def _execute_case_analysis(case_id: str, job_id: str):
 
 @router.post("/{case_id}/analyse", response_model=JobIdResponse, status_code=status.HTTP_202_ACCEPTED)
 def analyse_case(case_id: str, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     model = db.query(CaseModel).filter(CaseModel.id == case_id).first()
     if not model:
         raise NotFoundException(f"Case '{case_id}' not found.")
@@ -190,10 +194,14 @@ def analyse_case(case_id: str, db: Session = Depends(get_db)):
         )
         if active_job:
             return JobIdResponse(job_id=active_job.id)
+        # A stale analysing status without an active job is recoverable. Start a
+        # fresh job rather than leaving the case permanently stuck.
+        model.status = "open"
 
-    job = JobRegistry.create_job(kind="case_analysis", db=db, entity_id=case_id)
+    job = JobRegistry.create_job(kind="case_analysis", db=db, entity_id=case_id, commit=False)
     model.status = "analysing"
     db.commit()
+    db.refresh(job)
 
     JobRegistry.dispatch_async(job.id, _execute_case_analysis, case_id, job.id)
     return JobIdResponse(job_id=job.id)
@@ -234,6 +242,7 @@ def record_outcome(
     payload: CaseOutcomeUpdate,
     db: Session = Depends(get_db),
 ):
+    begin_write_transaction(db)
     model = db.query(CaseModel).filter(CaseModel.id == case_id).first()
     if not model:
         raise NotFoundException(f"Case '{case_id}' not found.")
@@ -241,13 +250,20 @@ def record_outcome(
     outcome_val = payload.outcome.value if hasattr(payload.outcome, "value") else str(payload.outcome)
     model.outcome = outcome_val
     model.outcome_note = payload.note
+    model.outcome_at = utc_now_iso()
     model.status = "closed"
+    if outcome_val == "replaced":
+        asset = db.query(AssetModel).filter(AssetModel.id == model.asset_id).first()
+        if asset:
+            asset.status = "retired"
+            asset.retired_at = model.outcome_at
     db.commit()
     db.refresh(model)
     return model_to_schema(model)
 
 @router.delete("/{case_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_case(case_id: str, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     model = db.query(CaseModel).filter(CaseModel.id == case_id).first()
     if not model:
         raise NotFoundException(f"Case '{case_id}' not found.")
@@ -256,28 +272,27 @@ def delete_case(case_id: str, db: Session = Depends(get_db)):
     diagnostic_id = model.diagnostic_id
 
     db.delete(model)
+    db.flush()
+
+    # Remove associated rows in the same serialized transaction, but unlink
+    # the screenshot only after the database commit succeeds.
+    screenshot_path = None
+    if screenshot_id and db.query(CaseModel).filter(CaseModel.screenshot_id == screenshot_id).count() == 0:
+        screenshot = db.query(ScreenshotModel).filter(ScreenshotModel.id == screenshot_id).first()
+        if screenshot:
+            screenshot_path = screenshot.file_path
+            db.delete(screenshot)
+
+    if diagnostic_id and db.query(CaseModel).filter(CaseModel.diagnostic_id == diagnostic_id).count() == 0:
+        diagnostic = db.query(DiagnosticModel).filter(DiagnosticModel.id == diagnostic_id).first()
+        if diagnostic:
+            db.delete(diagnostic)
+
     db.commit()
-
-    # SRS §8: "delete case-specific uploads if unreferenced"
-    if screenshot_id:
-        referenced = db.query(CaseModel).filter(CaseModel.screenshot_id == screenshot_id).count()
-        if referenced == 0:
-            sc = db.query(ScreenshotModel).filter(ScreenshotModel.id == screenshot_id).first()
-            if sc:
-                if os.path.exists(sc.file_path):
-                    try:
-                        os.remove(sc.file_path)
-                    except OSError:
-                        pass
-                db.delete(sc)
-                db.commit()
-
-    if diagnostic_id:
-        referenced = db.query(CaseModel).filter(CaseModel.diagnostic_id == diagnostic_id).count()
-        if referenced == 0:
-            diag = db.query(DiagnosticModel).filter(DiagnosticModel.id == diagnostic_id).first()
-            if diag:
-                db.delete(diag)
-                db.commit()
+    if screenshot_path and os.path.exists(screenshot_path):
+        try:
+            os.remove(screenshot_path)
+        except OSError:
+            logger.warning("Could not remove unreferenced screenshot file %s", screenshot_path)
 
     return None

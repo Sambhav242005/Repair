@@ -25,6 +25,7 @@ class AssetModel(Base):
     model = Column(String, nullable=True)
     status = Column(String, nullable=False, default="operational")
     mass_kg = Column(Float, nullable=True)
+    retired_at = Column(String, nullable=True)
 
     cases = relationship("CaseModel", back_populates="asset", cascade="all, delete-orphan")
     maintenance_tasks = relationship("MaintenanceModel", back_populates="asset")
@@ -43,6 +44,7 @@ class CaseModel(Base):
     analysis_json = Column(Text, nullable=True)
     outcome = Column(String, nullable=True)  # repaired, unresolved, replaced
     outcome_note = Column(Text, nullable=True)
+    outcome_at = Column(String, nullable=True)
     created_at = Column(String, nullable=False, default=utc_now_iso)
 
     asset = relationship("AssetModel", back_populates="cases")
@@ -137,3 +139,22 @@ class JobModel(Base):
     error_json = Column(Text, nullable=True)
     created_at = Column(String, nullable=False, default=utc_now_iso)
     updated_at = Column(String, nullable=False, default=utc_now_iso)
+
+
+class DesktopSessionModel(Base):
+    __tablename__ = "desktop_sessions"
+
+    id = Column(String, primary_key=True, index=True)
+    window_json = Column(Text, nullable=False)
+    goal = Column(Text, nullable=False)
+    acceptance_json = Column(Text, nullable=False)
+    status = Column(String, nullable=False, index=True)
+    stage = Column(String, nullable=False)
+    started_at = Column(String, nullable=False, default=utc_now_iso)
+    stopped_at = Column(String, nullable=True)
+    message = Column(Text, nullable=False)
+    verified_result = Column(Text, nullable=True)
+    error = Column(Text, nullable=True)
+    proposed_action_json = Column(Text, nullable=True)
+    debug_events_json = Column(Text, nullable=False, default="[]")
+    steps_json = Column(Text, nullable=False, default="[]")

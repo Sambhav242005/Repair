@@ -1,6 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -23,6 +24,7 @@ from backend.app.api.jobs import router as jobs_router
 from backend.app.api.factory import router as factory_router
 from backend.app.api.alerts import router as alerts_router
 from backend.app.api.impact import router as impact_router
+from backend.app.api.desktop import recover_desktop_sessions, router as desktop_router, stop_all_desktop_sessions
 
 async def _alert_scheduler_loop():
     from backend.app.db.database import SessionLocal
@@ -47,10 +49,15 @@ async def lifespan(app: FastAPI):
     import asyncio
     JobRegistry.set_loop(asyncio.get_running_loop())
     seed_database(reset=False)
+    recover_desktop_sessions()
     JobRegistry.cleanup_unfinished_jobs()
     scheduler_task = asyncio.create_task(_alert_scheduler_loop())
-    yield
-    scheduler_task.cancel()
+    try:
+        yield
+    finally:
+        scheduler_task.cancel()
+        await asyncio.gather(scheduler_task, return_exceptions=True)
+        await stop_all_desktop_sessions()
 
 app = FastAPI(
     title="Repair Before Replace API",
@@ -93,7 +100,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "error": {
                 "code": "VALIDATION_ERROR",
                 "message": "Invalid request payload or schema mismatch.",
-                "details": exc.errors(),
+            "details": jsonable_encoder(exc.errors()),
             }
         },
     )
@@ -126,6 +133,7 @@ app.include_router(jobs_router, prefix=API_V1_PREFIX)
 app.include_router(factory_router, prefix=API_V1_PREFIX)
 app.include_router(alerts_router, prefix=API_V1_PREFIX)
 app.include_router(impact_router, prefix=API_V1_PREFIX)
+app.include_router(desktop_router, prefix=API_V1_PREFIX)
 
 if __name__ == "__main__":
     import uvicorn

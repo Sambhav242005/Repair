@@ -2,6 +2,9 @@ import {
   Asset,
   Case,
   Diagnostic,
+  DesktopWindow,
+  DesktopSession,
+  DesktopSessionCreate,
   Maintenance,
   Lesson,
   Production,
@@ -33,6 +36,7 @@ class ApiClient {
   private mode: ApiConnectionMode = 'mock';
   private listeners: ((mode: ApiConnectionMode) => void)[] = [];
   private backendChecked = false;
+  private modeWasChosen = false;
 
   constructor() {
     this.checkBackendHealth();
@@ -43,6 +47,7 @@ class ApiClient {
   }
 
   public setMode(mode: ApiConnectionMode) {
+    this.modeWasChosen = true;
     this.mode = mode;
     this.notifyListeners();
   }
@@ -66,18 +71,18 @@ class ApiClient {
         signal: AbortSignal.timeout(1500),
       });
       if (res.ok) {
-        this.mode = 'live';
+        if (!this.modeWasChosen) this.mode = 'live';
         this.backendChecked = true;
         this.notifyListeners();
-        return true;
+        return this.mode === 'live';
       }
     } catch {
       // Backend not running
     }
-    this.mode = 'mock';
+    if (!this.modeWasChosen) this.mode = 'mock';
     this.backendChecked = true;
     this.notifyListeners();
-    return false;
+    return this.mode === 'live';
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -156,6 +161,11 @@ class ApiClient {
     }
 
     // /diagnostics
+    if (endpoint.startsWith('/diagnostics') && method === 'GET') {
+      const urlParams = new URLSearchParams(endpoint.split('?')[1] || '');
+      const items = mockEngine.getDiagnostics(urlParams.get('asset_id') || undefined);
+      return Promise.resolve({ items, total: items.length } as any);
+    }
     if (endpoint === '/diagnostics' && method === 'POST') {
       const body = JSON.parse(options.body as string);
       return Promise.resolve(mockEngine.createDiagnostic(body) as any);
@@ -318,6 +328,39 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  }
+
+  public async getDiagnostics(assetId?: string): Promise<Diagnostic[]> {
+    const query = assetId ? `?asset_id=${encodeURIComponent(assetId)}` : '';
+    const res = await this.request<PaginatedResponse<Diagnostic> | Diagnostic[]>(`/diagnostics${query}`);
+    return Array.isArray(res) ? res : res.items;
+  }
+
+  public async getDesktopWindows(): Promise<DesktopWindow[]> {
+    if (this.mode !== 'live') throw new Error('Switch to Live data to inspect native desktop windows.');
+    return this.request<DesktopWindow[]>('/desktop-sessions/windows');
+  }
+
+  public async getDesktopSessions(): Promise<DesktopSession[]> {
+    if (this.mode !== 'live') return [];
+    return this.request<DesktopSession[]>('/desktop-sessions');
+  }
+
+  public async startDesktopInspection(input: DesktopSessionCreate): Promise<DesktopSession> {
+    if (this.mode !== 'live') throw new Error('Native desktop control is disabled in Sample data mode.');
+    return this.request<DesktopSession>('/desktop-sessions', { method: 'POST', body: JSON.stringify(input) });
+  }
+
+  public async getDesktopSession(id: string): Promise<DesktopSession> {
+    return this.request<DesktopSession>(`/desktop-sessions/${encodeURIComponent(id)}`);
+  }
+
+  public async approveDesktopSession(id: string): Promise<DesktopSession> {
+    return this.request<DesktopSession>(`/desktop-sessions/${encodeURIComponent(id)}/approve`, { method: 'POST', body: JSON.stringify({}) });
+  }
+
+  public async stopDesktopSession(id: string): Promise<DesktopSession> {
+    return this.request<DesktopSession>(`/desktop-sessions/${encodeURIComponent(id)}/stop`, { method: 'POST', body: JSON.stringify({}) });
   }
 
   public async getCases(assetId?: string): Promise<Case[]> {

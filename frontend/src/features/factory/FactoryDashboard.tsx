@@ -31,7 +31,6 @@ import {
 interface FactoryDashboardProps {
   assets: Asset[];
   onError: (error: any) => void;
-  onRefreshImpact: () => void;
 }
 
 type FactorySubTab = 'maintenance' | 'lessons' | 'production';
@@ -39,9 +38,8 @@ type FactorySubTab = 'maintenance' | 'lessons' | 'production';
 export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
   assets,
   onError,
-  onRefreshImpact,
 }) => {
-  const [subTab, setSubTab] = useState<FactorySubTab>('maintenance');
+  const [subTab, setSubTab] = useState<FactorySubTab>('lessons');
   const [loading, setLoading] = useState<boolean>(true);
 
   // Entities
@@ -82,7 +80,6 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
       const nowIso = new Date().toISOString();
       const res = await apiClient.completeMaintenance(id, nowIso);
       await fetchAll();
-      onRefreshImpact();
       if (res?.next) {
         alert(
           `Maintenance completed! Next recurring cycle automatically scheduled for ${formatKolkata(
@@ -108,7 +105,6 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
     try {
       await apiClient.completeProduction(id);
       await fetchAll();
-      onRefreshImpact();
     } catch (err: any) {
       onError(err);
     }
@@ -154,7 +150,7 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
               gap: '6px',
             }}
           >
-            <Wrench size={15} /> Maintenance ({maintenanceList.length})
+            <Wrench size={15} /> Equipment care ({maintenanceList.length})
           </button>
 
           <button
@@ -173,7 +169,7 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
               gap: '6px',
             }}
           >
-            <BookOpen size={15} /> Training Lessons ({lessonsList.length})
+            <BookOpen size={15} /> Class sessions ({lessonsList.length})
           </button>
 
           <button
@@ -192,7 +188,7 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
               gap: '6px',
             }}
           >
-            <Boxes size={15} /> Production ({productionList.length})
+            <Boxes size={15} /> Equipment bookings ({productionList.length})
           </button>
         </div>
 
@@ -216,7 +212,7 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
               className="btn-primary"
               style={{ padding: '9px 16px', fontSize: '13px' }}
             >
-              <Plus size={16} /> Schedule Training Lesson
+              <Plus size={16} /> Plan Class Session
             </button>
           )}
 
@@ -354,10 +350,10 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div>
               <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-                Workforce Technical Training Lessons
+                Class sessions
               </h2>
               <p style={{ fontSize: '13px', color: '#64748b' }}>
-                FR-10: Training lessons reserve equipment only when <code>blocks_asset = true</code>.
+                Reserve equipment when a class needs exclusive access to a machine.
               </p>
             </div>
             <span style={{ fontSize: '12px', color: '#64748b', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
@@ -368,7 +364,7 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {lessonsList.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
-                No training lessons scheduled. Click "+ Schedule Training Lesson" above.
+                No class sessions planned yet. Use “Plan Class Session” to add one.
               </div>
             ) : (
               lessonsList.map((l) => {
@@ -427,10 +423,10 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: '#64748b', flexWrap: 'wrap' }}>
                           <span>
-                            <strong>Target Asset:</strong> {getAssetName(l.asset_id)}
+                            <strong>Equipment:</strong> {getAssetName(l.asset_id)}
                           </span>
                           <span>
-                            <strong>Trainee/Instructor:</strong> {l.assignee}
+                            <strong>Teacher or group:</strong> {l.assignee}
                           </span>
                           <span>
                             <strong>Window:</strong> {formatKolkata(l.starts_at)} → {formatKolkata(l.ends_at)}
@@ -884,7 +880,7 @@ const LessonModal: React.FC<{
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '14px' }}>
-          Schedule Training Lesson
+          Plan a Class Session
         </h3>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -904,7 +900,7 @@ const LessonModal: React.FC<{
 
           <div>
             <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-              Training Instructions / Syllabus *
+              Lesson plan and preparation *
             </label>
             <textarea
               id="input-lesson-instructions"
@@ -918,7 +914,7 @@ const LessonModal: React.FC<{
 
           <div>
             <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-              Trainee / Instructor *
+              Teacher or group *
             </label>
             <input
               id="input-lesson-assignee"
@@ -932,7 +928,7 @@ const LessonModal: React.FC<{
 
           <div>
             <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-              Associated Equipment (Optional)
+              Equipment (optional)
             </label>
             <select id="input-lesson-asset" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
               <option value="">-- None (Classroom Lecture) --</option>
@@ -952,8 +948,9 @@ const LessonModal: React.FC<{
                 onChange={(e) => setBlocksAsset(e.target.checked)}
                 style={{ width: 'auto' }}
               />
-              Blocks Equipment (<code>blocks_asset=true</code> — rejects production overlaps)
+              Reserve this equipment for the class
             </label>
+            <p style={{ fontSize: '11px', color: '#64748b', margin: '-8px 0 0 26px' }}>Other bookings for this equipment cannot overlap the class time.</p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>

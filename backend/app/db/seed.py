@@ -10,12 +10,15 @@ from backend.app.db.models import (
     ProductionModel,
     AlertModel,
     JobModel,
+    DesktopSessionModel,
 )
+from backend.app.db.migrations import run_sqlite_migrations
 
 def seed_database(reset: bool = True):
     if reset:
         Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    run_sqlite_migrations(engine)
 
     db = SessionLocal()
     try:

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Asset, Case, ImpactSummary, DemoRole, ApiErrorDetail } from './types';
+import { Asset, Case, ApiErrorDetail } from './types';
 import { apiClient, ApiConnectionMode } from './api/client';
 import { useAlertsPolling } from './api/polling';
 import { SampleDataBanner } from './components/SampleDataBanner';
@@ -7,14 +7,12 @@ import { Header, ActiveTab } from './components/Header';
 import { AlertsDrawer } from './components/AlertsDrawer';
 import { ErrorBanner } from './components/ErrorBanner';
 import { SvvvAcademicModal } from './components/SvvvAcademicModal';
-import { ImpactCards } from './features/impact/ImpactCards';
 import { AssetList } from './features/assets/AssetList';
 import { RepairCaseForm } from './features/repair/RepairCaseForm';
 import { CaseView } from './features/repair/CaseView';
-import { CollegeRepairsBanner } from './features/repair/CollegeRepairsBanner';
 import { ComputerAssistancePanel } from './features/computer-assistance/ComputerAssistancePanel';
 import { FactoryDashboard } from './features/factory/FactoryDashboard';
-import { GraduationCap, Award, ChevronRight } from 'lucide-react';
+import { ArrowRight, ClipboardList, CircleAlert, CheckCircle2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('repair');
@@ -22,14 +20,12 @@ export const App: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
   const [isAlertsDrawerOpen, setIsAlertsDrawerOpen] = useState<boolean>(false);
   const [isAcademicModalOpen, setIsAcademicModalOpen] = useState<boolean>(false);
-  const [role, setRole] = useState<DemoRole>('professor');
 
   // Core Data
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<string>('asset_laptop_1');
+  const [selectedAssetId, setSelectedAssetId] = useState<string>('');
   const [cases, setCases] = useState<Case[]>([]);
-  const [selectedCaseId, setSelectedCaseId] = useState<string>('case_1');
-  const [impact, setImpact] = useState<ImpactSummary | null>(null);
+  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
 
   // States
   const [loading, setLoading] = useState<boolean>(true);
@@ -41,27 +37,23 @@ export const App: React.FC = () => {
 
   // Listen to ApiClient mode changes
   useEffect(() => {
-    return apiClient.subscribeMode((mode) => setApiMode(mode));
+    const unsubscribe = apiClient.subscribeMode((mode) => setApiMode(mode));
+    void apiClient.checkBackendHealth();
+    return unsubscribe;
   }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [assetsData, casesData, impactData] = await Promise.all([
+      const [assetsData, casesData] = await Promise.all([
         apiClient.getAssets(),
         apiClient.getCases(),
-        apiClient.getImpact(),
       ]);
       setAssets(assetsData);
       setCases(casesData);
-      setImpact(impactData);
 
-      if (assetsData.length > 0 && !selectedAssetId) {
-        setSelectedAssetId(assetsData[0].id);
-      }
-      if (casesData.length > 0 && !selectedCaseId) {
-        setSelectedCaseId(casesData[0].id);
-      }
+      if (!assetsData.some((asset) => asset.id === selectedAssetId)) setSelectedAssetId(assetsData[0]?.id || '');
+      if (!casesData.some((item) => item.id === selectedCaseId)) setSelectedCaseId(casesData[0]?.id || '');
     } catch (err: any) {
       setGlobalError(err?.error || 'Failed to load initial workspace data');
     } finally {
@@ -71,13 +63,12 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, apiMode]);
 
   // Handler: Toggle API connection mode
   const handleToggleApiMode = () => {
     const nextMode = apiMode === 'live' ? 'mock' : 'live';
     apiClient.setMode(nextMode);
-    loadData();
   };
 
   // Handler: Reset demo data
@@ -93,8 +84,6 @@ export const App: React.FC = () => {
     const allCases = await apiClient.getCases();
     setCases(allCases);
     setSelectedCaseId(newCaseId);
-    const imp = await apiClient.getImpact();
-    setImpact(imp);
   };
 
   const handleRefreshCurrentCase = async () => {
@@ -102,8 +91,6 @@ export const App: React.FC = () => {
     try {
       const updated = await apiClient.getCase(selectedCaseId);
       setCases((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-      const imp = await apiClient.getImpact();
-      setImpact(imp);
     } catch (err: any) {
       console.warn('Could not refresh case:', err);
     }
@@ -120,17 +107,10 @@ export const App: React.FC = () => {
         } else {
           setSelectedCaseId('');
         }
-        const imp = await apiClient.getImpact();
-        setImpact(imp);
       } catch (err: any) {
         setGlobalError(err?.error || 'Failed to delete case');
       }
     }
-  };
-
-  const handleSelectCollegeRepair = (caseId: string, assetId: string) => {
-    setSelectedAssetId(assetId);
-    setSelectedCaseId(caseId);
   };
 
   const currentCase = cases.find((c) => c.id === selectedCaseId) || null;
@@ -153,81 +133,11 @@ export const App: React.FC = () => {
         onOpenAlerts={() => setIsAlertsDrawerOpen(true)}
         soundEnabled={soundEnabled}
         onToggleSound={() => setSoundEnabled((prev) => !prev)}
-        role={role}
-        onSelectRole={setRole}
         onOpenAcademicModal={() => setIsAcademicModalOpen(true)}
       />
 
       {/* Main Container */}
-      <main style={{ flex: 1, maxWidth: '1440px', width: '100%', margin: '0 auto', padding: '24px' }}>
-        {/* Professor / Evaluator Academic Banner */}
-        {role === 'professor' && (
-          <div
-            id="svvv-professor-banner"
-            style={{
-              backgroundColor: '#eff6ff',
-              border: '1px solid #bfdbfe',
-              borderLeft: '4px solid #0071ce',
-              borderRadius: '10px',
-              padding: '16px 20px',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '14px',
-              boxShadow: '0 2px 6px rgba(0, 113, 206, 0.08)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '8px',
-                  backgroundColor: '#0071ce',
-                  color: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <GraduationCap size={20} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <strong style={{ fontSize: '14px', color: '#0f172a' }}>
-                    Shri Vaishnav Vidyapeeth Vishwavidyalaya (SVVV) — Faculty Evaluator Mode
-                  </strong>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      backgroundColor: '#dbeafe',
-                      color: '#1d4ed8',
-                      padding: '2px 8px',
-                      borderRadius: '9999px',
-                    }}
-                  >
-                    Capstone 2026
-                  </span>
-                </div>
-                <p style={{ fontSize: '12.5px', color: '#334155', marginTop: '2px', lineHeight: 1.4 }}>
-                  Evaluating AI-guided diagnosis, read-only telemetry, circular material retention, and collision-free workshop scheduling.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setIsAcademicModalOpen(true)}
-              className="btn-primary"
-              style={{ padding: '8px 16px', fontSize: '12.5px' }}
-            >
-              <Award size={15} /> Review Viva &amp; Architecture Details
-            </button>
-          </div>
-        )}
+      <main id="workspace" className="teacher-main">
 
         {/* Global Error Notice with Retry */}
         <ErrorBanner
@@ -236,47 +146,30 @@ export const App: React.FC = () => {
           onDismiss={() => setGlobalError(null)}
         />
 
-        {/* Impact Cards (Right to Repair circularity metrics) */}
-        <ImpactCards impact={impact} loading={loading} />
-
-        {/* TAB 1: REPAIR GUIDANCE & CASES */}
         {activeTab === 'repair' && (
-          <div id="repair-tab-layout" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* SVVV Student & Lab Repairs Feature Showcase Banner */}
-            <CollegeRepairsBanner
-              onSelectRepair={handleSelectCollegeRepair}
-              selectedCaseId={selectedCaseId}
-            />
+          <div id="repair-tab-layout" className="teacher-content">
+            <section className="teacher-welcome">
+              <div>
+                <p className="eyebrow">TEACHING &amp; LAB SUPPORT</p>
+                <h1>What needs attention today?</h1>
+                <p>Record an equipment problem, review safe troubleshooting guidance, and keep your class and lab work moving.</p>
+              </div>
+              <button className="welcome-action" onClick={() => document.getElementById('repair-case-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                Record a problem <ArrowRight size={17} />
+              </button>
+            </section>
+            <section className="teacher-summary" aria-label="Workspace summary" aria-busy={loading}>
+              <div><ClipboardList size={19} /><span><strong>{cases.length}</strong><small>reported problems</small></span></div>
+              <div><CircleAlert size={19} /><span><strong>{cases.filter((item) => item.status === 'open' || item.status === 'analysing').length}</strong><small>need follow-up</small></span></div>
+              <div><CheckCircle2 size={19} /><span><strong>{assets.filter((asset) => asset.status === 'operational').length}</strong><small>equipment available</small></span></div>
+            </section>
 
             {/* Desktop side-by-side, mobile stacked */}
             <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-                gap: '24px',
-                alignItems: 'start',
-              }}
+              className="teacher-case-layout"
             >
               {/* Left Column: Asset Selection, Case Form, and Case History */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {/* Asset List & Status Manager */}
-                <AssetList
-                  assets={assets}
-                  selectedAssetId={selectedAssetId}
-                  onSelectAsset={(a) => setSelectedAssetId(a.id)}
-                  onCreateAsset={async (input) => {
-                    await apiClient.createAsset(input);
-                    const fresh = await apiClient.getAssets();
-                    setAssets(fresh);
-                  }}
-                  onUpdateAsset={async (id, input) => {
-                    await apiClient.updateAsset(id, input);
-                    const fresh = await apiClient.getAssets();
-                    setAssets(fresh);
-                    refetchAlerts();
-                  }}
-                />
-
+              <div className="teacher-column">
                 {/* Repair Case Form */}
                 <RepairCaseForm
                   assets={assets}
@@ -298,11 +191,12 @@ export const App: React.FC = () => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                     <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
-                      Active &amp; Historical Cases ({cases.length})
+                      Reported problems ({cases.length})
                     </h3>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '340px', overflowY: 'auto' }}>
+                    {cases.length === 0 && <p className="empty-state">No problems have been reported yet. Start with the form above.</p>}
                     {cases.map((c) => {
                       const isSelected = c.id === selectedCaseId;
                       const a = assets.find((item) => item.id === c.asset_id);
@@ -310,6 +204,9 @@ export const App: React.FC = () => {
                         <div
                           key={c.id}
                           id={`case-item-${c.id}`}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedCaseId(c.id); if (c.asset_id) setSelectedAssetId(c.asset_id); } }}
                           onClick={() => {
                             setSelectedCaseId(c.id);
                             if (c.asset_id) setSelectedAssetId(c.asset_id);
@@ -362,6 +259,16 @@ export const App: React.FC = () => {
                     })}
                   </div>
                 </div>
+                <details className="equipment-management">
+                  <summary>Manage lab equipment <span>{assets.length} records</span></summary>
+                  <AssetList
+                    assets={assets}
+                    selectedAssetId={selectedAssetId}
+                    onSelectAsset={(a) => setSelectedAssetId(a.id)}
+                    onCreateAsset={async (input) => { await apiClient.createAsset(input); setAssets(await apiClient.getAssets()); }}
+                    onUpdateAsset={async (id, input) => { await apiClient.updateAsset(id, input); setAssets(await apiClient.getAssets()); refetchAlerts(); }}
+                  />
+                </details>
               </div>
 
               {/* Right Column: Case Analysis & Ordered Steps */}
@@ -380,6 +287,7 @@ export const App: React.FC = () => {
             <ComputerAssistancePanel
               assets={assets}
               selectedAssetId={selectedAssetId}
+              liveMode={apiMode === 'live'}
               onError={(err) => setGlobalError(err?.error || err)}
             />
           </div>
@@ -387,14 +295,15 @@ export const App: React.FC = () => {
 
         {/* TAB 2: FACTORY OPERATIONS & SCHEDULING */}
         {activeTab === 'factory' && (
+          <div className="teacher-content">
+          <section className="teacher-welcome compact-welcome">
+            <div><p className="eyebrow">TEACHING &amp; LAB PLANNING</p><h1>Plan classes around your equipment</h1><p>Schedule lessons, preventive care, and shared equipment time in one place.</p></div>
+          </section>
           <FactoryDashboard
             assets={assets}
             onError={(err) => setGlobalError(err?.error || err)}
-            onRefreshImpact={async () => {
-              const imp = await apiClient.getImpact();
-              setImpact(imp);
-            }}
           />
+          </div>
         )}
       </main>
 
@@ -414,27 +323,7 @@ export const App: React.FC = () => {
         onClose={() => setIsAcademicModalOpen(false)}
       />
 
-      {/* SVVV Institutional Footer */}
-      <footer
-        style={{
-          padding: '24px',
-          borderTop: '1px solid #e2e8f0',
-          backgroundColor: '#ffffff',
-          fontSize: '12.5px',
-          color: '#64748b',
-          textAlign: 'center',
-          marginTop: '40px',
-        }}
-      >
-        <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <span>
-            <strong>Shri Vaishnav Vidyapeeth Vishwavidyalaya (SVVV), Indore</strong> • Faculty of Engineering &amp; Technology • Capstone 2026
-          </span>
-          <span style={{ fontFamily: 'var(--font-mono)', color: '#0071ce', fontWeight: 600 }}>
-            API Endpoint: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'} • Timezone: Asia/Kolkata (IST)
-          </span>
-        </div>
-      </footer>
+      <footer className="teacher-footer">Faculty workspace · Times shown in Asia/Kolkata</footer>
     </div>
   );
 };

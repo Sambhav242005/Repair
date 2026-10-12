@@ -15,10 +15,14 @@ describe('DateTime and Formatter Utilities (Asia/Kolkata)', () => {
     expect(formatted).toContain('12');
   });
 
-  it('converts browser datetime-local to valid ISO-8601 string', () => {
+  it('interprets datetime-local as Asia/Kolkata regardless of browser timezone', () => {
     const input = '2026-10-12T14:30';
     const iso = datetimeLocalToIso(input);
-    expect(iso).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    expect(iso).toBe('2026-10-12T09:00:00.000Z');
+  });
+
+  it('rejects invalid date-time values rather than normalizing them silently', () => {
+    expect(() => datetimeLocalToIso('2026-02-30T14:30')).toThrow(RangeError);
   });
 
   it('formats byte quantities into readable units', () => {

@@ -10,7 +10,7 @@ from backend.app.core.exceptions import (
     ScheduleConflictException,
     ValidationException,
 )
-from backend.app.db.database import get_db
+from backend.app.db.database import begin_write_transaction, get_db
 from backend.app.db.models import (
     AssetModel,
     LessonModel,
@@ -29,13 +29,12 @@ from backend.app.models.schemas import (
     Production,
     ProductionCreate,
 )
+from backend.app.utils.datetime import parse_offset_datetime
 
 router = APIRouter(tags=["Factory Planning"])
 
 def parse_iso(dt_str: str) -> datetime:
-    # Handles ISO formats like 2026-10-12T08:00:00Z or +00:00
-    cleaned = dt_str.replace("Z", "+00:00")
-    return datetime.fromisoformat(cleaned)
+    return parse_offset_datetime(dt_str)
 
 def check_half_open_overlap(s1: str, e1: str, s2: str, e2: str) -> bool:
     """SRS §9: Half-open windows [start, end); touching endpoints do not conflict."""
@@ -126,6 +125,7 @@ def list_maintenance(db: Session = Depends(get_db)):
 
 @router.post("/maintenance", response_model=Maintenance, status_code=status.HTTP_201_CREATED)
 def create_maintenance(payload: MaintenanceCreate, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     asset = db.query(AssetModel).filter(AssetModel.id == payload.asset_id).first()
     if not asset:
         raise NotFoundException(f"Asset '{payload.asset_id}' not found.")
@@ -175,6 +175,7 @@ def complete_maintenance(
     payload: MaintenanceCompleteRequest,
     db: Session = Depends(get_db),
 ):
+    begin_write_transaction(db)
     model = db.query(MaintenanceModel).filter(MaintenanceModel.id == maint_id).first()
     if not model:
         raise NotFoundException(f"Maintenance task '{maint_id}' not found.")
@@ -243,6 +244,7 @@ def list_lessons(db: Session = Depends(get_db)):
 
 @router.post("/lessons", response_model=Lesson, status_code=status.HTTP_201_CREATED)
 def create_lesson(payload: LessonCreate, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     t_start, t_end = parse_iso(payload.starts_at), parse_iso(payload.ends_at)
     if t_start >= t_end:
         raise ValidationException("starts_at must be strictly before ends_at.")
@@ -285,6 +287,7 @@ def create_lesson(payload: LessonCreate, db: Session = Depends(get_db)):
 
 @router.post("/lessons/{lesson_id}/complete", response_model=Lesson)
 def complete_lesson(lesson_id: str, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     model = db.query(LessonModel).filter(LessonModel.id == lesson_id).first()
     if not model:
         raise NotFoundException(f"Lesson '{lesson_id}' not found.")
@@ -317,6 +320,7 @@ def list_production(db: Session = Depends(get_db)):
 
 @router.post("/production", response_model=Production, status_code=status.HTTP_201_CREATED)
 def create_production(payload: ProductionCreate, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     asset = db.query(AssetModel).filter(AssetModel.id == payload.asset_id).first()
     if not asset:
         raise NotFoundException(f"Asset '{payload.asset_id}' not found.")
@@ -360,6 +364,7 @@ def create_production(payload: ProductionCreate, db: Session = Depends(get_db)):
 
 @router.post("/production/{prod_id}/complete", response_model=Production)
 def complete_production(prod_id: str, db: Session = Depends(get_db)):
+    begin_write_transaction(db)
     model = db.query(ProductionModel).filter(ProductionModel.id == prod_id).first()
     if not model:
         raise NotFoundException(f"Production '{prod_id}' not found.")

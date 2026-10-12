@@ -1,5 +1,6 @@
 from typing import Any, Generic, List, Optional, TypeVar
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from backend.app.utils.datetime import normalize_utc_iso
 from backend.app.models.enums import (
     AssetCategory,
     AssetStatus,
@@ -21,6 +22,16 @@ T = TypeVar("T")
 
 class BaseSchema(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
+    @field_validator(
+        "due_at", "starts_at", "ends_at", "completed_at", "collected_at",
+        "triggered_at", "created_at", "acknowledged_at", mode="before", check_fields=False,
+    )
+    @classmethod
+    def normalize_offset_timestamps(cls, value):
+        if value is None:
+            return None
+        return normalize_utc_iso(value)
 
 # --- Canonical Error Envelope ---
 class ErrorDetail(BaseSchema):

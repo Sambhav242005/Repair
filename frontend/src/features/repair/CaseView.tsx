@@ -89,10 +89,10 @@ export const CaseView: React.FC<CaseViewProps> = ({
           <Wrench size={32} color="#0071ce" />
         </div>
         <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-          No Repair Guide Selected
+          Select a Reported Problem
         </h3>
         <p style={{ maxWidth: '420px', fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
-          Select an equipment case from the left sidebar or submit a new diagnosis to generate step-by-step repair instructions.
+          Choose a report to review its current status, evidence, and troubleshooting steps.
         </p>
       </div>
     );
@@ -133,7 +133,7 @@ export const CaseView: React.FC<CaseViewProps> = ({
     setOutcomeSuccessMsg(null);
     try {
       await apiClient.recordOutcome(currentCase.id, outcome, outcomeNote);
-      setOutcomeSuccessMsg(`Outcome "${outcome}" recorded successfully! Retained mass metrics updated.`);
+      setOutcomeSuccessMsg(`Outcome "${outcome}" recorded. The case history is up to date.`);
       onRefreshCase();
     } catch (err: any) {
       onError(err);
@@ -229,89 +229,11 @@ export const CaseView: React.FC<CaseViewProps> = ({
         </button>
       </div>
 
-      {/* iFixit Guide Stats Pill Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: '12px',
-          marginBottom: '28px',
-        }}
-      >
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-          }}
-        >
-          <Clock size={22} color="#0071ce" />
-          <div>
-            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Time Estimate</div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>15–30 Mins</div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-          }}
-        >
-          <Wrench size={22} color="#f59e0b" />
-          <div>
-            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Difficulty</div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#b45309' }}>Moderate</div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: '#ecfdf5',
-            border: '1px solid #a7f3d0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-          }}
-        >
-          <Award size={22} color="#059669" />
-          <div>
-            <div style={{ fontSize: '11px', color: '#047857', fontWeight: 600, textTransform: 'uppercase' }}>Repairability</div>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#065f46' }}>8 / 10 Score</div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: '#ebf5ff',
-            border: '1px solid #b9e1ff',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-          }}
-        >
-          <ShieldCheck size={22} color="#0071ce" />
-          <div>
-            <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: 600, textTransform: 'uppercase' }}>Mass Retained</div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#0c4a6e' }}>
-              {asset?.mass_kg ? `${asset.mass_kg} kg` : '1.65 kg'}
-            </div>
-          </div>
-        </div>
-      </div>
+      {currentCase.analysis && <div className="case-evidence-summary">
+        <div><span>Suggested path</span><strong>{currentCase.analysis.recommendation.replace(/_/g, ' ')}</strong></div>
+        <div><span>Estimated repair cost</span><strong>{formatPaise(currentCase.analysis.estimated_repair_cost_paise)}</strong></div>
+        <p>These estimates come from the current case analysis. Review its evidence and uncertainties before using them with students.</p>
+      </div>}
 
       {/* Analysis Trigger Banner if Not Ready */}
       {currentCase.status !== 'ready' && currentCase.status !== 'closed' && (
@@ -330,7 +252,7 @@ export const CaseView: React.FC<CaseViewProps> = ({
             Generate Guided Step-by-Step Instructions
           </h3>
           <p style={{ maxWidth: '480px', margin: '0 auto 16px auto', fontSize: '14px', color: '#475569' }}>
-            AI evaluates hardware telemetry, memory/disk observations, and manufacturer documentation to structure safe repair steps.
+            Create a draft from the reported symptoms and available case evidence. Review its sources, uncertainties, and stop conditions before using it in class.
           </p>
           <button
             id="btn-analyse-case"

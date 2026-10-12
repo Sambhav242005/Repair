@@ -1,839 +1,219 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Asset,
-  BrowserSource,
-  BrowserResult,
-  ScreenshotAdvice,
-  Diagnostic,
-} from '../../types';
-import {
-  Monitor,
-  Globe,
-  HardDrive,
-  Upload,
-  Play,
-  Terminal,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Info,
-  Layers,
-  ChevronRight,
-  ExternalLink,
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Asset, DesktopSession, DesktopWindow, Diagnostic, ScreenshotAdvice } from '../../types';
+import { Activity, Check, CircleStop, Computer, FileText, Image, RefreshCw, ShieldCheck, Sparkles } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { pollJob } from '../../api/polling';
 import { formatBytes, formatKolkata } from '../../utils/datetime';
 
-interface ComputerAssistancePanelProps {
+interface Props {
   assets: Asset[];
   selectedAssetId?: string;
+  liveMode: boolean;
   onError: (error: any) => void;
 }
+type PanelTab = 'desktop' | 'screen' | 'diagnostics';
+const pause = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
-type PanelTab = 'screenshot' | 'browser' | 'diagnostics';
-
-export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = ({
-  assets,
-  selectedAssetId,
-  onError,
-}) => {
-  const [activeTab, setActiveTab] = useState<PanelTab>('screenshot');
-
-  // --- Screenshot guidance state ---
+export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAssetId, liveMode, onError }) => {
+  const [tab, setTab] = useState<PanelTab>('desktop');
+  const [windows, setWindows] = useState<DesktopWindow[]>([]);
+  const [windowKey, setWindowKey] = useState('');
+  const [goal, setGoal] = useState('Display 7 in Calculator');
+  const [automationId, setAutomationId] = useState('CalculatorResults');
+  const [expectedText, setExpectedText] = useState('Display is 7');
+  const [session, setSession] = useState<DesktopSession | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  const [diagnosticFile, setDiagnosticFile] = useState<File | null>(null);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
-  const [screenshotQuestion, setScreenshotQuestion] = useState<string>(
-    'What visible controls and buttons should be inspected on this screen?'
-  );
   const [screenshotAdvice, setScreenshotAdvice] = useState<ScreenshotAdvice | null>(null);
-  const [screenshotLoading, setScreenshotLoading] = useState<boolean>(false);
+  const [question, setQuestion] = useState('What should I check on this screen?');
 
-  // --- Browser assistant state ---
-  const [browserSources, setBrowserSources] = useState<BrowserSource[]>([]);
-  const [selectedSourceId, setSelectedSourceId] = useState<string>('');
-  const [browserAssetId, setBrowserAssetId] = useState<string>(selectedAssetId || assets[0]?.id || '');
-  const [browserQuestion, setBrowserQuestion] = useState<string>(
-    'Retrieve verified manufacturer preventive maintenance and thermal clearance guidelines.'
-  );
-  const [browserResult, setBrowserResult] = useState<BrowserResult | null>(null);
-  const [browserLoading, setBrowserLoading] = useState<boolean>(false);
+  const selectedWindow = windows.find((item) => `${item.handle}:${item.process_id}` === windowKey);
 
-  // --- Diagnostics state ---
-  const [selectedDiagnostic, setSelectedDiagnostic] = useState<Diagnostic | null>(null);
-  const [diagnosticsLoading, setDiagnosticsLoading] = useState<boolean>(false);
-
-  // Sync selectedAssetId
-  useEffect(() => {
-    if (selectedAssetId) {
-      setBrowserAssetId(selectedAssetId);
-    }
-  }, [selectedAssetId]);
-
-  // Load browser sources & diagnostics
-  useEffect(() => {
-    apiClient
-      .getBrowserSources()
-      .then((sources) => {
-        setBrowserSources(sources);
-        if (sources.length > 0) {
-          setSelectedSourceId(sources[0].id);
-        }
-      })
-      .catch((err) => console.warn('Failed to load browser sources:', err));
-
-    // Load initial diagnostics from mock/api
-    if (browserAssetId) {
-      setSelectedDiagnostic({
-        id: 'diag_1',
-        asset_id: 'asset_laptop_1',
-        collected_at: '2026-10-12T08:30:00Z',
-        os: { name: 'Ubuntu GNU/Linux', version: '24.04 LTS (x86_64)' },
-        memory: { total_bytes: 16777216000, available_bytes: 1887436800 },
-        disks: [{ label: '/ (NVMe Root)', total_bytes: 512110190592, free_bytes: 17179869184 }],
-        cpu: { logical_count: 8 },
-        collector_version: '1.0.0-cli-safe',
-      });
-    }
-  }, [browserAssetId]);
-
-  // Handler: Screenshot upload & advice
-  const handleScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        onError({ error: { code: 'FILE_TOO_LARGE', message: 'Screenshot must be under 5MB.' } });
-        return;
-      }
-      setScreenshotFile(file);
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setScreenshotPreview(ev.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRunScreenshotAdvice = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setScreenshotLoading(true);
-    setScreenshotAdvice(null);
-    const abortCtrl = new AbortController();
-
+  const refreshWindows = async () => {
+    if (!liveMode) return;
     try {
-      let uploadId = 'upload_mock_1';
-      if (screenshotFile) {
-        const uploadRes = await apiClient.uploadScreenshot(screenshotFile);
-        uploadId = uploadRes.id;
-      }
-
-      const { job_id } = await apiClient.requestScreenshotAdvice(uploadId, screenshotQuestion);
-      const completedJob = await pollJob<ScreenshotAdvice>(job_id, {
-        signal: abortCtrl.signal,
-        intervalMs: 2000,
-        maxWaitMs: 30000,
-      });
-      setScreenshotAdvice(completedJob.result);
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') {
-        onError(err);
-      }
-    } finally {
-      setScreenshotLoading(false);
-    }
+      const result = await apiClient.getDesktopWindows();
+      setWindows(result);
+      if (!result.some((item) => `${item.handle}:${item.process_id}` === windowKey)) setWindowKey('');
+    } catch (err) { onError(err); }
   };
 
-  // Handler: Playwright Browser assistant
-  const handleRunBrowserAssistant = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedSourceId) {
-      onError({ error: { code: 'VALIDATION_ERROR', message: 'Select an approved source ID.' } });
+  const refreshDiagnostics = async () => {
+    try { setDiagnostics(await apiClient.getDiagnostics(selectedAssetId)); }
+    catch (err) { onError(err); }
+  };
+
+  useEffect(() => {
+    if (tab === 'desktop' && liveMode) {
+      refreshWindows();
+      apiClient.getDesktopSessions().then((items) => { if (items.length) setSession((current) => current || items[0]); }).catch(onError);
+    }
+    if (tab === 'diagnostics') refreshDiagnostics();
+    // Refresh only when the teacher changes the active tool or data source.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, liveMode, selectedAssetId]);
+
+  useEffect(() => {
+    if (!session || session.status !== 'running') return;
+    let cancelled = false;
+    const poll = async () => {
+      while (!cancelled) {
+        await pause(1200);
+        if (cancelled) return;
+        try {
+          const fresh = await apiClient.getDesktopSession(session.id);
+          setSession(fresh);
+          if (fresh.status !== 'running') return;
+        } catch (err) { onError(err); return; }
+      }
+    };
+    void poll();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id, session?.status]);
+
+  const startInspection = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!liveMode || !selectedWindow) return;
+    setLoading(true);
+    try {
+      const created = await apiClient.startDesktopInspection({
+        window: selectedWindow,
+        goal: goal.trim(),
+        acceptance: { automation_id: automationId.trim(), name_equals: expectedText },
+      });
+      setSession(created);
+    } catch (err) { onError(err); }
+    finally { setLoading(false); }
+  };
+
+  const approve = async () => {
+    if (!session) return;
+    setLoading(true);
+    try { setSession(await apiClient.approveDesktopSession(session.id)); }
+    catch (err) { onError(err); }
+    finally { setLoading(false); }
+  };
+
+  const stop = async () => {
+    if (!session) return;
+    setLoading(true);
+    try { setSession(await apiClient.stopDesktopSession(session.id)); }
+    catch (err) { onError(err); }
+    finally { setLoading(false); }
+  };
+
+  const uploadDiagnostic = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!diagnosticFile || !selectedAssetId) return;
+    setLoading(true);
+    try {
+      const parsed = JSON.parse(await diagnosticFile.text());
+      await apiClient.createDiagnostic({ ...parsed, asset_id: selectedAssetId });
+      setDiagnosticFile(null);
+      await refreshDiagnostics();
+    } catch (err) { onError(err); }
+    finally { setLoading(false); }
+  };
+
+  const requestScreenAdvice = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!screenshotFile) {
+      onError({ error: { code: 'SCREENSHOT_REQUIRED', message: 'Choose a PNG or JPEG screenshot first.' } });
       return;
     }
-    setBrowserLoading(true);
-    setBrowserResult(null);
-    const abortCtrl = new AbortController();
-
+    setLoading(true);
+    setScreenshotAdvice(null);
     try {
-      const { job_id } = await apiClient.startBrowserRun(browserAssetId, selectedSourceId, browserQuestion);
-      const completedJob = await pollJob<BrowserResult>(job_id, {
-        signal: abortCtrl.signal,
-        intervalMs: 2000,
-        maxWaitMs: 30000,
-      });
-      setBrowserResult(completedJob.result);
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') {
-        onError(err);
-      }
-    } finally {
-      setBrowserLoading(false);
-    }
+      const upload = await apiClient.uploadScreenshot(screenshotFile);
+      const { job_id } = await apiClient.requestScreenshotAdvice(upload.id, question);
+      const completed = await pollJob<ScreenshotAdvice>(job_id, { intervalMs: 1500, maxWaitMs: 30000 });
+      setScreenshotAdvice(completed.result);
+    } catch (err) { onError(err); }
+    finally { setLoading(false); }
   };
 
-  // Handler: Diagnostics upload
-  const handleDiagnosticFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setDiagnosticsLoading(true);
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      const created = await apiClient.createDiagnostic({
-        ...parsed,
-        asset_id: browserAssetId || 'asset_laptop_1',
-      });
-      setSelectedDiagnostic(created);
-    } catch (err: any) {
-      onError(err);
-    } finally {
-      setDiagnosticsLoading(false);
-    }
-  };
+  const tabButton = (key: PanelTab, title: string, icon: React.ReactNode) => (
+    <button className={`support-tab ${tab === key ? 'selected' : ''}`} aria-pressed={tab === key} onClick={() => setTab(key)} key={key}>{icon}{title}</button>
+  );
 
   return (
-    <div
-      className="card"
-      id="computer-assistance-panel"
-      style={{
-        backgroundColor: '#ffffff',
-        border: '1px solid #e2e8f0',
-        borderRadius: '12px',
-        padding: '24px',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-      }}
-    >
-      {/* Panel Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          gap: '12px',
-          borderBottom: '2px solid #f1f5f9',
-          paddingBottom: '16px',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
-                backgroundColor: '#ebf5ff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Terminal size={18} color="#0071ce" />
-            </div>
-            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-              Computer Assistance &amp; Diagnostics Tools
-            </h2>
-          </div>
-          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
-            Multi-modal investigation: screen inspection advice, sandboxed OEM manual lookup, and system diagnostics.
-          </p>
-        </div>
-
-        {/* Tab Buttons */}
-        <div
-          style={{
-            display: 'flex',
-            backgroundColor: '#f1f5f9',
-            padding: '4px',
-            borderRadius: '8px',
-            border: '1px solid #e2e8f0',
-            gap: '4px',
-          }}
-        >
-          <button
-            id="tab-btn-screenshot"
-            onClick={() => setActiveTab('screenshot')}
-            style={{
-              padding: '8px 14px',
-              fontSize: '12px',
-              fontWeight: 700,
-              borderRadius: '6px',
-              backgroundColor: activeTab === 'screenshot' ? '#ffffff' : 'transparent',
-              color: activeTab === 'screenshot' ? '#0071ce' : '#64748b',
-              boxShadow: activeTab === 'screenshot' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <Monitor size={14} /> Screen Guidance
-          </button>
-
-          <button
-            id="tab-btn-browser"
-            onClick={() => setActiveTab('browser')}
-            style={{
-              padding: '8px 14px',
-              fontSize: '12px',
-              fontWeight: 700,
-              borderRadius: '6px',
-              backgroundColor: activeTab === 'browser' ? '#ffffff' : 'transparent',
-              color: activeTab === 'browser' ? '#0071ce' : '#64748b',
-              boxShadow: activeTab === 'browser' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <Globe size={14} /> OEM Manuals
-          </button>
-
-          <button
-            id="tab-btn-diagnostics"
-            onClick={() => setActiveTab('diagnostics')}
-            style={{
-              padding: '8px 14px',
-              fontSize: '12px',
-              fontWeight: 700,
-              borderRadius: '6px',
-              backgroundColor: activeTab === 'diagnostics' ? '#ffffff' : 'transparent',
-              color: activeTab === 'diagnostics' ? '#0071ce' : '#64748b',
-              boxShadow: activeTab === 'diagnostics' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <HardDrive size={14} /> PC Telemetry
-          </button>
+    <section className="support-panel" id="computer-assistance-panel">
+      <div className="support-heading">
+        <div><p className="eyebrow">COMPUTER &amp; EQUIPMENT SUPPORT</p><h2>Get help with a problem</h2><p>Inspect a native desktop app, ask about a screenshot, or review an imported system report.</p></div>
+        <div className="support-tabs" role="group" aria-label="Choose support tool">
+          {tabButton('desktop', 'Use a computer', <Computer size={16} />)}
+          {tabButton('screen', 'Ask about a screen', <Image size={16} />)}
+          {tabButton('diagnostics', 'System reports', <Activity size={16} />)}
         </div>
       </div>
 
-      {/* TAB 1: Screenshot Guidance */}
-      {activeTab === 'screenshot' && (
-        <div id="tab-content-screenshot" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div
-            style={{
-              backgroundColor: '#fffbeb',
-              border: '1px solid #fde68a',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              fontSize: '13px',
-              color: '#92400e',
-            }}
-          >
-            <Info size={16} color="#d97706" style={{ flexShrink: 0 }} />
-            <span>
-              <strong>Visual Guidance Only:</strong> This panel identifies visible controls and buttons from your image. It never executes or clicks actions inside the computer.
-            </span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-            {/* Input Form & Preview */}
-            <form onSubmit={handleRunScreenshotAdvice} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-                  Upload Screen Snapshot (PNG / JPEG &lt; 5MB)
-                </label>
-                <input
-                  id="input-assistance-screenshot"
-                  type="file"
-                  accept="image/png,image/jpeg"
-                  onChange={handleScreenshotSelect}
-                  style={{
-                    fontSize: '12px',
-                    padding: '8px',
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                  }}
-                />
-              </div>
-
-              {screenshotPreview && (
-                <div
-                  style={{
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    border: '1px solid #cbd5e1',
-                    background: '#f8fafc',
-                    textAlign: 'center',
-                    padding: '8px',
-                  }}
-                >
-                  <img
-                    src={screenshotPreview}
-                    alt="Screen Preview"
-                    style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '4px' }}
-                  />
-                </div>
-              )}
-
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-                  Inspection Question / Context
-                </label>
-                <input
-                  id="input-screenshot-question"
-                  type="text"
-                  value={screenshotQuestion}
-                  onChange={(e) => setScreenshotQuestion(e.target.value)}
-                  placeholder="Ask about visible buttons, error text, or menus..."
-                />
-              </div>
-
-              <button
-                id="btn-run-screenshot-advice"
-                type="submit"
-                disabled={screenshotLoading}
-                className="btn-primary"
-                style={{ padding: '10px' }}
-              >
-                {screenshotLoading ? (
-                  <>Analysing Visible Controls...</>
-                ) : (
-                  <>
-                    <Play size={14} /> Request Visual Guidance
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Results Display */}
-            <div
-              style={{
-                backgroundColor: '#f8fafc',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                padding: '18px',
-                minHeight: '240px',
-              }}
-            >
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>
-                Vision Inspection Results
-              </h3>
-
-              {screenshotLoading ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
-                  <p style={{ fontSize: '13px', fontWeight: 600 }}>Evaluating visual OCR controls with vision model...</p>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>Polling 2s intervals</span>
-                </div>
-              ) : screenshotAdvice ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {/* Observations */}
-                  <div>
-                    <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#0071ce', textTransform: 'uppercase' }}>
-                      Visible UI Observations:
-                    </h4>
-                    <ul style={{ paddingLeft: '16px', fontSize: '13px', color: '#334155', marginTop: '6px' }}>
-                      {screenshotAdvice.observations.map((obs, idx) => (
-                        <li key={idx} style={{ marginBottom: '4px' }}>{obs}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Suggested Actions */}
-                  <div>
-                    <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#059669', textTransform: 'uppercase' }}>
-                      Suggested Next Steps:
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                      {screenshotAdvice.suggested_actions.map((act, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            backgroundColor: '#ecfdf5',
-                            border: '1px solid #a7f3d0',
-                            padding: '10px 12px',
-                            borderRadius: '6px',
-                            fontSize: '12.5px',
-                            color: '#065f46',
-                          }}
-                        >
-                          <div><strong>Step:</strong> {act.instruction}</div>
-                          {act.visible_label && (
-                            <div style={{ marginTop: '4px', color: '#047857' }}>
-                              Visible Label: <code>"{act.visible_label}"</code>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Limitations */}
-                  {screenshotAdvice.limitations.length > 0 && (
-                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
-                      <h4 style={{ fontSize: '11px', fontWeight: 700, color: '#b45309', textTransform: 'uppercase' }}>
-                        Vision Model Limitations:
-                      </h4>
-                      <ul style={{ paddingLeft: '16px', fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                        {screenshotAdvice.limitations.map((lim, idx) => (
-                          <li key={idx}>{lim}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px' }}>
-                  Upload a screenshot and click "Request Visual Guidance" to test AI control observation.
-                </div>
-              )}
+      {tab === 'desktop' && <div className="support-body">
+        <div className="support-explainer"><ShieldCheck size={18} /><p><strong>Native computer use.</strong> Clef reviews the current app and proposes one bounded action. Nothing is typed or clicked until you review the proposal and approve it.</p></div>
+        {!liveMode ? <div className="support-empty"><Computer size={26} /><h3>Connect the local backend to use a computer</h3><p>Switch to Live data above. Native input is unavailable in sample mode.</p></div> : <div className="desktop-grid">
+          <form className="support-form" onSubmit={startInspection}>
+            <label>Open app window
+              <div className="field-inline"><select value={selectedWindow ? `${selectedWindow.handle}:${selectedWindow.process_id}` : ''} onChange={(event) => setWindowKey(event.target.value)} required>
+                <option value="">Choose an open app</option>
+                {windows.map((item) => <option key={`${item.handle}:${item.process_id}`} value={`${item.handle}:${item.process_id}`}>{item.application === 'Calculator' ? 'Calculator' : item.application === 'Settings' ? 'Settings' : 'Task Manager'} · window {item.handle}</option>)}
+              </select><button type="button" className="icon-action" title="Refresh open windows" aria-label="Refresh open windows" onClick={refreshWindows}><RefreshCw size={16} /></button></div>
+            </label>
+            <label>What should the computer do?
+              <textarea rows={2} maxLength={500} value={goal} onChange={(event) => setGoal(event.target.value)} required placeholder="Describe the task in plain language" />
+            </label>
+            <div className="support-two-fields">
+              <label>Expected result control ID
+                <input value={automationId} onChange={(event) => setAutomationId(event.target.value)} maxLength={200} required />
+              </label>
+              <label>Exact expected text
+                <input value={expectedText} onChange={(event) => setExpectedText(event.target.value)} maxLength={200} required />
+              </label>
             </div>
+            <p className="field-hint">The exact result is your success check. For Calculator, use the result display’s UI Automation ID and the value you expect.</p>
+            <button className="btn-primary" type="submit" disabled={loading || !selectedWindow}><Sparkles size={16} />{loading ? 'Inspecting the app…' : 'Inspect and prepare a plan'}</button>
+          </form>
+          <div className="session-card" aria-live="polite">
+            <div className="session-title"><h3>{session ? session.app_title : 'Workflow review'}</h3>{session && <span className={`session-status status-${session.status}`}>{session.status.replace('_', ' ')}</span>}</div>
+            {!session ? <p className="muted-copy">Choose an open app and describe a small task. You’ll see the proposed step and debug details here before any input is sent.</p> : <>
+              <p className="session-message">{session.message}</p>
+              {session.status === 'needs_approval' && <div className="approval-card"><h4>Review proposed computer action</h4><p>{String(session.proposed_action?.expected_effect || session.proposed_action?.operation || 'Action details are in the debug record.')}</p><pre>{JSON.stringify(session.proposed_action, null, 2)}</pre><div className="approval-actions"><button className="btn-primary" disabled={loading} onClick={approve}><Check size={16} /> Approve this action</button><button className="btn-secondary" disabled={loading} onClick={stop}><CircleStop size={16} /> Stop</button></div></div>}
+              {session.status === 'running' && <button className="btn-danger" disabled={loading} onClick={stop}><CircleStop size={16} /> Request stop</button>}
+              {session.verified_result && <div className="verified-result"><Check size={16} /> Verified visible result: <strong>{session.verified_result}</strong></div>}
+              {session.error && <p className="session-error">{session.error}</p>}
+              <details className="debug-details"><summary>Decision trace &amp; debug details ({session.debug_events.length})</summary>
+                {session.debug_events.length ? <ol>{session.debug_events.map((event, index) => <li key={`${event.at}-${index}`}><strong>{event.event}</strong><time>{formatKolkata(event.at)}</time><pre>{JSON.stringify(event.data ?? event, null, 2)}</pre></li>)}</ol> : <p className="muted-copy">No debug events have been recorded yet.</p>}
+              </details>
+            </>}
           </div>
-        </div>
-      )}
+        </div>}
+      </div>}
 
-      {/* TAB 2: Playwright Browser Assistant */}
-      {activeTab === 'browser' && (
-        <div id="tab-content-browser" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div
-            style={{
-              backgroundColor: '#ebf5ff',
-              border: '1px solid #b9e1ff',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              fontSize: '13px',
-              color: '#0369a1',
-            }}
-          >
-            <Globe size={16} color="#0071ce" style={{ flexShrink: 0 }} />
-            <span>
-              <strong>Sandboxed OEM Manual Lookup (FR-07):</strong> Headless Playwright launches an isolated context, queries verified manufacturer technical portals, and logs the execution trace.
-            </span>
-          </div>
+      {tab === 'screen' && <div className="support-body">
+        <div className="support-explainer"><Image size={18} /><p><strong>Guidance only.</strong> The model can describe visible controls and suggest steps from the image. This tool never sends input to your computer.</p></div>
+        <form className="support-form screen-form" onSubmit={requestScreenAdvice}>
+          <label>Screenshot (PNG or JPEG, up to 5 MB)<input type="file" accept="image/png,image/jpeg" onChange={(event) => {
+            const file = event.target.files?.[0] || null;
+            if (file && file.size > 5 * 1024 * 1024) {
+              setScreenshotFile(null);
+              onError({ error: { code: 'FILE_TOO_LARGE', message: 'Choose a screenshot smaller than 5 MB.' } });
+              event.target.value = '';
+              return;
+            }
+            setScreenshotFile(file);
+          }} /></label>
+          <label>What would you like help with?<input value={question} onChange={(event) => setQuestion(event.target.value)} /></label>
+          <button className="btn-primary" disabled={loading || !screenshotFile}><Sparkles size={16} />{loading ? 'Reviewing screenshot…' : 'Get screen guidance'}</button>
+        </form>
+        {screenshotAdvice && <div className="advice-card"><h3>What I can see</h3><ul>{screenshotAdvice.observations.map((item, index) => <li key={index}>{item}</li>)}</ul><h3>Suggested next steps</h3><ol>{screenshotAdvice.suggested_actions.map((item, index) => <li key={index}>{item.instruction}{item.visible_label && <> — look for <strong>{item.visible_label}</strong></>}</li>)}</ol>{screenshotAdvice.limitations.length > 0 && <p className="field-hint">Limitations: {screenshotAdvice.limitations.join(' ')}</p>}</div>}
+      </div>}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-            {/* Run Form */}
-            <form onSubmit={handleRunBrowserAssistant} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-                  Approved Documentation Source ID *
-                </label>
-                <select
-                  id="select-browser-source"
-                  value={selectedSourceId}
-                  onChange={(e) => setSelectedSourceId(e.target.value)}
-                  required
-                >
-                  {browserSources.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.title} ({s.id})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-                  Target Equipment Asset
-                </label>
-                <select
-                  id="select-browser-asset"
-                  value={browserAssetId}
-                  onChange={(e) => setBrowserAssetId(e.target.value)}
-                >
-                  {assets.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({a.category})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-                  Query Context / Search Prompt
-                </label>
-                <textarea
-                  id="textarea-browser-question"
-                  rows={3}
-                  value={browserQuestion}
-                  onChange={(e) => setBrowserQuestion(e.target.value)}
-                  placeholder="e.g. Find fan exhaust clearance and maximum thermal rating..."
-                />
-              </div>
-
-              <button
-                id="btn-run-browser-assistant"
-                type="submit"
-                disabled={browserLoading}
-                className="btn-primary"
-                style={{ padding: '10px' }}
-              >
-                {browserLoading ? (
-                  <>Querying OEM Manual Source...</>
-                ) : (
-                  <>
-                    <Play size={14} /> Launch Sandboxed Manual Lookup
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Browser Result & Playwright Trace */}
-            <div
-              style={{
-                backgroundColor: '#f8fafc',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                padding: '18px',
-                minHeight: '240px',
-              }}
-            >
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>
-                Playwright Action Trace &amp; Page Extraction
-              </h3>
-
-              {browserLoading ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
-                  <p style={{ fontSize: '13px', fontWeight: 600 }}>Launching isolated browser session...</p>
-                  <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Timeout limit: 30 seconds</p>
-                </div>
-              ) : browserResult ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div>
-                    <h4 style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a' }}>
-                      {browserResult.page_title}
-                    </h4>
-                    <a
-                      href={browserResult.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: '12px', color: '#0071ce', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}
-                    >
-                      {browserResult.url} <ExternalLink size={12} />
-                    </a>
-                  </div>
-
-                  {/* Playwright Action Trace */}
-                  <div>
-                    <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>
-                      Execution Action Trace ({browserResult.trace.length} steps):
-                    </span>
-                    <div
-                      style={{
-                        marginTop: '6px',
-                        backgroundColor: '#ffffff',
-                        borderRadius: '6px',
-                        border: '1px solid #e2e8f0',
-                        padding: '10px',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '11px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                      }}
-                    >
-                      {browserResult.trace.map((tr, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#334155' }}>
-                            <strong style={{ color: '#0071ce' }}>[{tr.action}]</strong> {tr.target}
-                          </span>
-                          <span
-                            style={{
-                              color: tr.status === 'succeeded' ? '#059669' : '#dc2626',
-                              fontWeight: 700,
-                            }}
-                          >
-                            ✓ {tr.status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Excerpt */}
-                  <div
-                    style={{
-                      backgroundColor: '#ffffff',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12.5px',
-                      color: '#334155',
-                      borderLeft: '3px solid #0071ce',
-                      border: '1px solid #e2e8f0',
-                    }}
-                  >
-                    <strong>Documentation Extract:</strong> {browserResult.excerpt}
-                  </div>
-
-                  {/* AI Advice */}
-                  {browserResult.advice && (
-                    <div style={{ fontSize: '12.5px', color: '#0369a1', lineHeight: 1.5, backgroundColor: '#ebf5ff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #b9e1ff' }}>
-                      <strong>Synthesized Advice:</strong> {browserResult.advice}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px' }}>
-                  Select an approved source and click "Launch Sandboxed Manual Lookup" to inspect execution.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: PC Diagnostics */}
-      {activeTab === 'diagnostics' && (
-        <div id="tab-content-diagnostics" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div
-            style={{
-              backgroundColor: '#ecfdf5',
-              border: '1px solid #a7f3d0',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              fontSize: '13px',
-              color: '#065f46',
-            }}
-          >
-            <Info size={16} color="#059669" style={{ flexShrink: 0 }} />
-            <span>
-              <strong>Read-Only Telemetry (FR-08):</strong> Imports standard system telemetry JSON. Collects only non-sensitive metrics (RAM, partition capacity, CPU threads). Usernames and credentials are fully redacted.
-            </span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-            {/* Import / Upload */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-                  Upload Diagnostic JSON from Collector Script
-                </label>
-                <input
-                  id="input-assistance-diag"
-                  type="file"
-                  accept=".json,application/json"
-                  onChange={handleDiagnosticFileUpload}
-                  style={{
-                    fontSize: '12px',
-                    padding: '8px',
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                  }}
-                />
-              </div>
-
-              <div
-                style={{
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  padding: '14px',
-                }}
-              >
-                <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>
-                  Collector CLI Reference
-                </h4>
-                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
-                  Generate safe, read-only telemetry without root privileges:
-                </p>
-                <pre
-                  style={{
-                    backgroundColor: '#0f172a',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '11px',
-                    color: '#38bdf8',
-                    overflowX: 'auto',
-                  }}
-                >
-                  python scripts/collect_diagnostics.py --redact-all &gt; diag.json
-                </pre>
-              </div>
-            </div>
-
-            {/* Telemetry Display */}
-            <div
-              style={{
-                backgroundColor: '#f8fafc',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                padding: '18px',
-              }}
-            >
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>
-                Structured Telemetry Metrics
-              </h3>
-
-              {selectedDiagnostic ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
-                    <span style={{ color: '#64748b' }}>Operating System:</span>
-                    <strong style={{ color: '#0f172a' }}>
-                      {selectedDiagnostic.os.name} {selectedDiagnostic.os.version}
-                    </strong>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
-                    <span style={{ color: '#64748b' }}>CPU Cores:</span>
-                    <strong style={{ color: '#0f172a' }}>
-                      {selectedDiagnostic.cpu.logical_count} Logical Threads
-                    </strong>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
-                    <span style={{ color: '#64748b' }}>Physical Memory:</span>
-                    <strong style={{ color: '#0f172a' }}>
-                      {formatBytes(selectedDiagnostic.memory.available_bytes)} free / {formatBytes(selectedDiagnostic.memory.total_bytes)}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-                      Mounted Disk Partitions:
-                    </span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {selectedDiagnostic.disks.map((d, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            backgroundColor: '#ffffff',
-                            border: '1px solid #e2e8f0',
-                            padding: '8px 10px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontFamily: 'var(--font-mono)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <span style={{ color: '#334155', fontWeight: 600 }}>{d.label}</span>
-                          <span style={{ color: d.free_bytes < 20 * 1024 * 1024 * 1024 ? '#dc2626' : '#059669', fontWeight: 700 }}>
-                            {formatBytes(d.free_bytes)} free / {formatBytes(d.total_bytes)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px' }}>
-                    Collected at: {formatKolkata(selectedDiagnostic.collected_at)} • Collector v{selectedDiagnostic.collector_version}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px' }}>
-                  No diagnostic JSON imported yet.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {tab === 'diagnostics' && <div className="support-body">
+        <div className="support-explainer"><FileText size={18} /><p><strong>Imported reports only.</strong> Reports are supplied by the teacher or collected separately; this screen does not scan or change a computer.</p></div>
+        <div className="diagnostic-toolbar"><label>Equipment record<select value={selectedAssetId || ''} onChange={(event) => { const match = assets.find((item) => item.id === event.target.value); if (match) void apiClient.getDiagnostics(match.id).then(setDiagnostics).catch(onError); }}><option value="">Select equipment</option>{assets.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><form className="import-form" onSubmit={uploadDiagnostic}><label>Import diagnostic JSON<input type="file" accept="application/json,.json" onChange={(event) => setDiagnosticFile(event.target.files?.[0] || null)} /></label><button className="btn-secondary" disabled={!diagnosticFile || !selectedAssetId || loading}>Import report</button></form></div>
+        {diagnostics.length === 0 ? <div className="support-empty"><FileText size={24} /><h3>No report saved for this equipment</h3><p>Import a JSON report to keep it with the equipment record.</p></div> : <div className="diagnostic-list">{diagnostics.map((item) => <article key={item.id}><div><strong>{item.os.name} {item.os.version}</strong><small>{formatKolkata(item.collected_at)} · collector {item.collector_version}</small></div><span>{item.cpu.logical_count} CPU threads</span><span>{formatBytes(item.memory.available_bytes)} available memory</span><span>{item.disks.length} disk{item.disks.length === 1 ? '' : 's'}</span></article>)}</div>}
+      </div>}
+    </section>
   );
 };
