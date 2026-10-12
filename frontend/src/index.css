@@ -512,10 +512,20 @@ input::placeholder, textarea::placeholder {
 .advice-card { padding: 16px; border: 1px solid #e4e7dd; border-radius: 11px; color: #536156; background: #fafbf7; font-size: 12px; }
 .advice-card h3 { margin: 8px 0 5px; color: #34493a; font-size: 12px; }
 .advice-card ul, .advice-card ol { padding-left: 20px; }
-.diagnostic-toolbar { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(280px, 1.3fr); align-items: end; gap: 14px; }
+.diagnostic-toolbar { display: grid; grid-template-columns: minmax(180px, .7fr) auto minmax(280px, 1.3fr); align-items: end; gap: 14px; }
+.diagnostic-toolbar > button { min-height: 38px; padding: 8px 11px; font-size: 11px; }
 .import-form { display: flex; align-items: end; gap: 8px; }
 .import-form label { flex: 1; }
 .import-form button { flex: 0 0 auto; padding: 9px 11px; font-size: 11px; }
+.diagnostic-clef-card { display: flex; flex-direction: column; gap: 9px; max-width: 720px; padding: 15px; border: 1px solid #dce5d8; border-radius: 11px; background: #f8faf6; }
+.diagnostic-clef-card h3 { color: #34493a; font-size: 13px; }
+.diagnostic-clef-card label { color: #38473c; font-size: 11px; font-weight: 700; }
+.diagnostic-clef-card textarea { font-size: 12px; }
+.diagnostic-clef-card .btn-primary { align-self: flex-start; padding: 9px 12px; font-size: 11px; }
+.diagnostic-triage-result { padding: 12px; border-left: 3px solid #51805b; border-radius: 7px; background: #fff; color: #526256; }
+.diagnostic-triage-result strong { color: #34493a; font-size: 12px; }
+.diagnostic-triage-result p { margin: 5px 0; font-size: 11px; line-height: 1.55; }
+.diagnostic-triage-result small { color: #7a857c; font-size: 10px; }
 .diagnostic-list { display: flex; flex-direction: column; gap: 8px; }
 .diagnostic-list article { display: grid; grid-template-columns: minmax(160px, 1fr) auto auto auto; align-items: center; gap: 14px; padding: 12px; border: 1px solid #e6e8df; border-radius: 10px; background: #fff; color: #5a685d; font-size: 10px; }
 .diagnostic-list strong, .diagnostic-list small { display: block; }

@@ -8,7 +8,9 @@ import time
 import unittest
 from unittest.mock import patch
 from backend.app.services.ai.provider import ProviderError
-from backend.app.services.automation.clef import choice_request, parse_selection
+from backend.app.services.automation.clef import (
+    choice_request, diagnostic_choice_request, parse_diagnostic_selection, parse_selection,
+)
 from backend.app.services.automation.desktop import DesktopSession, GemmaPlanner, accepted, build_candidates, cloud_state
 from backend.app.services.automation.models import Acceptance, Candidate, Control, Observation, Plan, Selection, Window
 from backend.app.services.automation.windows import DesktopError, WindowsAdapter, permitted
@@ -264,6 +266,23 @@ class DesktopTests(unittest.IsolatedAsyncioTestCase):
         bad["answers"]["next_action"]["probabilities"]["stop"] = float("nan")
         with self.assertRaises(ProviderError):
             parse_selection(bad, candidates)
+
+    def test_diagnostic_clef_choice_is_advice_not_a_system_action(self):
+        choices = {"memory": "Review memory", "storage": "Review storage", "clarify_symptoms": "Ask for context"}
+        request = diagnostic_choice_request({"reported_issue": "slow PC"}, choices)
+        self.assertEqual(request["questions"]["next_check"]["type"], "choice")
+        self.assertIn("advice only", request["questions"]["next_check"]["instructions"])
+        probabilities = {key: float(key == "clarify_symptoms") for key in choices}
+        response = {"model": "clef", "answers": {"next_check": {
+            "type": "choice", "choice": "clarify_symptoms", "probabilities": probabilities, "confidence": 0.8,
+        }}}
+        self.assertEqual(parse_diagnostic_selection(response, choices).action_id, "clarify_symptoms")
+        response["answers"]["next_check"]["choice"] = "run_command"
+        with self.assertRaises(ProviderError):
+            parse_diagnostic_selection(response, choices)
+        response["answers"]["next_check"].update(choice="clarify_symptoms", confidence=1.1)
+        with self.assertRaises(ProviderError):
+            parse_diagnostic_selection(response, choices)
 
     def test_collector_contract_and_privacy(self):
         payload = collect("asset_test")

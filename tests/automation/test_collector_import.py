@@ -5,8 +5,30 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from scripts.collect_diagnostics import detect_device_identity, parse_device_identity
 
 class CollectorImportTest(unittest.TestCase):
+    def test_device_identity_accepts_make_and_model_only(self):
+        self.assertEqual(parse_device_identity('{"manufacturer":"Lenovo","model":"ThinkPad T480"}'),
+                         {"manufacturer": "Lenovo", "model": "ThinkPad T480"})
+
+    def test_device_identity_rejects_oem_placeholders(self):
+        with self.assertRaisesRegex(RuntimeError, "usable manufacturer and model"):
+            parse_device_identity('{"manufacturer":"Default string","model":"System Product Name"}')
+
+    @unittest.skipUnless(os.name == "nt", "Local model detection uses Windows CIM.")
+    def test_device_detection_requests_make_and_model_without_serial(self):
+        with patch("scripts.collect_diagnostics.subprocess.run", return_value=SimpleNamespace(
+                stdout='{"manufacturer":"Lenovo","model":"T480"}')) as run:
+            self.assertEqual(detect_device_identity(), {"manufacturer": "Lenovo", "model": "T480"})
+            command = " ".join(run.call_args.args[0])
+            self.assertIn("Win32_ComputerSystem", command)
+            self.assertNotIn("SerialNumber", command)
+            self.assertNotIn("ExecutionPolicy", command)
+
     def test_collector_imports_through_api(self):
         code = '''
 import asyncio

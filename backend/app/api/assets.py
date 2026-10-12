@@ -1,13 +1,19 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from backend.app.core.exceptions import NotFoundException
 from backend.app.db.database import begin_write_transaction, get_db
 from backend.app.db.models import AlertModel, AssetModel, ProductionModel, utc_now_iso
-from backend.app.models.schemas import Asset, AssetCreate, AssetUpdate, ListEnvelope
+from backend.app.models.schemas import Asset, AssetCreate, AssetUpdate, ListEnvelope, LocalDeviceCandidate
+from scripts.collect_diagnostics import detect_device_identity
+from .local_access import require_local_ui
 
 router = APIRouter(prefix="/assets", tags=["Assets"])
+
+
+def _identity_key(value: str | None) -> str:
+    return " ".join((value or "").casefold().split())
 
 def model_to_schema(model: AssetModel) -> Asset:
     return Asset(
@@ -25,6 +31,26 @@ def list_assets(db: Session = Depends(get_db)):
     records = db.query(AssetModel).all()
     items = [model_to_schema(r) for r in records]
     return ListEnvelope(items=items, total=len(items))
+
+
+@router.get("/local-device", response_model=LocalDeviceCandidate)
+def detect_local_device(request: Request, db: Session = Depends(get_db)):
+    """Read local Windows make/model and suggest a fleet record; never saves automatically."""
+    require_local_ui(request, "Local device detection")
+    try:
+        identity = detect_device_identity()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
+
+    existing = next((asset for asset in db.query(AssetModel).filter(AssetModel.category == "computer").all()
+                     if _identity_key(asset.manufacturer) == _identity_key(identity["manufacturer"])
+                     and _identity_key(asset.model) == _identity_key(identity["model"])), None)
+    return LocalDeviceCandidate(
+        **identity,
+        suggested_name=f"{identity['manufacturer']} {identity['model']}",
+        existing_asset_id=existing.id if existing else None,
+        existing_asset_name=existing.name if existing else None,
+    )
 
 @router.post("", response_model=Asset, status_code=status.HTTP_201_CREATED)
 def create_asset(payload: AssetCreate, db: Session = Depends(get_db)):

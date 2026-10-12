@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Asset, AssetStatus, CreateAssetInput, UpdateAssetInput } from '../../types';
-import { Plus, Edit2, Laptop, Settings, Cpu } from 'lucide-react';
+import { Asset, AssetStatus, CreateAssetInput, LocalDeviceCandidate, UpdateAssetInput } from '../../types';
+import { Plus, Edit2, Laptop, Settings, Cpu, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { apiClient } from '../../api/client';
 
 interface AssetListProps {
   assets: Asset[];
+  liveMode: boolean;
   selectedAssetId?: string;
   onSelectAsset: (asset: Asset) => void;
   onCreateAsset: (input: CreateAssetInput) => Promise<void>;
@@ -12,6 +14,7 @@ interface AssetListProps {
 
 export const AssetList: React.FC<AssetListProps> = ({
   assets,
+  liveMode,
   selectedAssetId,
   onSelectAsset,
   onCreateAsset,
@@ -19,6 +22,44 @@ export const AssetList: React.FC<AssetListProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [detecting, setDetecting] = useState(false);
+  const [detectedDevice, setDetectedDevice] = useState<LocalDeviceCandidate | null>(null);
+  const [detectError, setDetectError] = useState<string | null>(null);
+  const [detectMessage, setDetectMessage] = useState<string | null>(null);
+
+  const detectThisPC = async () => {
+    setDetecting(true);
+    setDetectError(null);
+    setDetectMessage(null);
+    try {
+      setDetectedDevice(await apiClient.detectLocalDevice());
+    } catch (err: any) {
+      setDetectedDevice(null);
+      setDetectError(err?.error?.message || err?.message || 'Could not detect this PC. Check that the local backend is running.');
+    } finally {
+      setDetecting(false);
+    }
+  };
+
+  const addDetectedPC = async () => {
+    if (!detectedDevice || detectedDevice.existing_asset_id) return;
+    setDetecting(true);
+    setDetectError(null);
+    try {
+      await onCreateAsset({
+        name: detectedDevice.suggested_name,
+        category: 'computer',
+        manufacturer: detectedDevice.manufacturer,
+        model: detectedDevice.model,
+      });
+      setDetectMessage(`${detectedDevice.suggested_name} was added to the equipment list.`);
+      setDetectedDevice(null);
+    } catch (err: any) {
+      setDetectError(err?.error?.message || err?.message || 'Could not add this PC. Review the equipment form and try again.');
+    } finally {
+      setDetecting(false);
+    }
+  };
 
   const getCategoryIcon = (category: Asset['category']) => {
     switch (category) {
@@ -74,28 +115,47 @@ export const AssetList: React.FC<AssetListProps> = ({
             {assets.length} registered workstations & machines
           </p>
         </div>
-        <button
-          id="btn-add-asset"
-          onClick={() => {
-            setEditingAsset(null);
-            setIsModalOpen(true);
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '12px',
-            fontWeight: 700,
-            color: '#0071ce',
-            backgroundColor: '#ebf5ff',
-            border: '1px solid #b9e1ff',
-            padding: '6px 12px',
-            borderRadius: '6px',
-          }}
-        >
-          <Plus size={14} /> Add Device
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button type="button" className="btn-secondary" onClick={detectThisPC} disabled={!liveMode || detecting} aria-describedby="local-device-detect-help">
+            {detecting ? <RefreshCw size={14} /> : <Laptop size={14} />} {detecting ? 'Checking this PC…' : 'Detect this PC'}
+          </button>
+          <button
+            id="btn-add-asset"
+            onClick={() => {
+              setEditingAsset(null);
+              setIsModalOpen(true);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              fontWeight: 700,
+              color: '#0071ce',
+              backgroundColor: '#ebf5ff',
+              border: '1px solid #b9e1ff',
+              padding: '6px 12px',
+              borderRadius: '6px',
+            }}
+          >
+            <Plus size={14} /> Add Device
+          </button>
+        </div>
       </div>
+
+      <p id="local-device-detect-help" className="field-hint" style={{ margin: '-6px 0 12px' }}>
+        Detects only this PC’s make and model. Nothing is added until you choose Add this PC.
+        {!liveMode && ' Switch to Live data to use local detection.'}
+      </p>
+      {detectError && <p role="alert" className="desktop-window-empty desktop-window-error" style={{ marginBottom: '12px' }}>{detectError}</p>}
+      {detectMessage && <p role="status" className="desktop-window-empty" style={{ marginBottom: '12px' }}><CheckCircle2 size={17} />{detectMessage}</p>}
+      {detectedDevice && <div role="status" className="desktop-window-empty" style={{ marginBottom: '12px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+        <div><strong>Found {detectedDevice.manufacturer} {detectedDevice.model}</strong><p>{detectedDevice.existing_asset_id ? `Already listed as ${detectedDevice.existing_asset_name}.` : 'Review the detected model, then add it to your equipment list.'}</p></div>
+        {detectedDevice.existing_asset_id ? <button type="button" className="btn-secondary" onClick={() => {
+          const existing = assets.find((asset) => asset.id === detectedDevice.existing_asset_id);
+          if (existing) onSelectAsset(existing);
+        }}>View existing device</button> : <button type="button" className="btn-primary" onClick={addDetectedPC} disabled={detecting}>Add this PC</button>}
+      </div>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {assets.map((asset) => {

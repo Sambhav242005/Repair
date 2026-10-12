@@ -72,6 +72,28 @@ class AssetUpdate(BaseSchema):
     status: Optional[AssetStatus] = None
     mass_kg: Optional[float] = None
 
+class LocalDeviceCandidate(BaseSchema):
+    manufacturer: str
+    model: str
+    suggested_name: str
+    existing_asset_id: Optional[str] = None
+    existing_asset_name: Optional[str] = None
+
+class LocalDiagnosticCollectRequest(BaseSchema):
+    asset_id: str = Field(min_length=1, max_length=200)
+
+class DiagnosticTriageRequest(BaseSchema):
+    diagnostic_id: str = Field(min_length=1, max_length=200)
+    asset_id: str = Field(min_length=1, max_length=200)
+    issue: str = Field(min_length=3, max_length=500)
+
+class DiagnosticTriageResponse(BaseSchema):
+    focus: str
+    title: str
+    recommendation: str
+    confidence: float
+    probabilities: dict[str, float]
+
 # --- Case & Analysis Schemas ---
 class EvidenceItem(BaseSchema):
     source_id: str

@@ -6,6 +6,41 @@ import os
 import platform
 import shutil
 import ctypes
+import subprocess
+
+UNKNOWN_DEVICE_VALUES = {"", "default string", "system product name", "to be filled by o.e.m.", "to be filled by oem"}
+
+def parse_device_identity(output: str) -> dict:
+    """Parse only the public make/model fields; serial numbers and hostnames are never queried."""
+    try:
+        payload = json.loads(output)
+        manufacturer = str(payload.get("manufacturer") or "").strip()
+        model = str(payload.get("model") or "").strip()
+    except (json.JSONDecodeError, AttributeError, TypeError):
+        raise RuntimeError("Windows returned an invalid computer model record.") from None
+    if manufacturer.casefold() in UNKNOWN_DEVICE_VALUES or model.casefold() in UNKNOWN_DEVICE_VALUES:
+        raise RuntimeError("This PC did not report a usable manufacturer and model.")
+    if len(manufacturer) > 120 or len(model) > 160:
+        raise RuntimeError("This PC returned an invalid manufacturer or model value.")
+    return {"manufacturer": manufacturer, "model": model}
+
+def detect_device_identity(runner=None) -> dict:
+    """Read local Win32_ComputerSystem make/model without collecting serial or user identity."""
+    if os.name != "nt":
+        raise RuntimeError("This PC can only be detected by the local Windows backend.")
+    run = runner or subprocess.run
+    script = (
+        "$ErrorActionPreference='Stop'; "
+        "$pc=Get-CimInstance -ClassName Win32_ComputerSystem; "
+        "[Console]::OutputEncoding=New-Object System.Text.UTF8Encoding($false); "
+        "@{manufacturer=$pc.Manufacturer;model=$pc.Model} | ConvertTo-Json -Compress"
+    )
+    try:
+        result = run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=8, check=True)
+    except (OSError, subprocess.SubprocessError):
+        raise RuntimeError("Windows could not read this PC's manufacturer and model.") from None
+    return parse_device_identity(result.stdout)
 
 def memory_bytes() -> tuple[int, int]:
     if os.name == "nt":

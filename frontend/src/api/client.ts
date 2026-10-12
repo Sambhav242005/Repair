@@ -1,7 +1,9 @@
 import {
   Asset,
+  LocalDeviceCandidate,
   Case,
   Diagnostic,
+  DiagnosticTriageResponse,
   DesktopWindow,
   DesktopSession,
   DesktopSessionCreate,
@@ -307,6 +309,11 @@ class ApiClient {
     });
   }
 
+  public async detectLocalDevice(): Promise<LocalDeviceCandidate> {
+    if (this.mode !== 'live') throw new Error('Switch to Live data to detect this PC.');
+    return this.request<LocalDeviceCandidate>('/assets/local-device');
+  }
+
   public async updateAsset(id: string, input: UpdateAssetInput): Promise<Asset> {
     return this.request<Asset>(`/assets/${id}`, {
       method: 'PATCH',
@@ -334,6 +341,22 @@ class ApiClient {
     const query = assetId ? `?asset_id=${encodeURIComponent(assetId)}` : '';
     const res = await this.request<PaginatedResponse<Diagnostic> | Diagnostic[]>(`/diagnostics${query}`);
     return Array.isArray(res) ? res : res.items;
+  }
+
+  public async collectLocalDiagnostic(assetId: string): Promise<Diagnostic> {
+    if (this.mode !== 'live') throw new Error('Switch to Live data to collect a local PC report.');
+    return this.request<Diagnostic>('/diagnostics/collect-local', {
+      method: 'POST',
+      body: JSON.stringify({ asset_id: assetId }),
+    });
+  }
+
+  public async reviewDiagnosticWithClef(assetId: string, diagnosticId: string, issue: string): Promise<DiagnosticTriageResponse> {
+    if (this.mode !== 'live') throw new Error('Switch to Live data to request a Clef review.');
+    return this.request<DiagnosticTriageResponse>('/diagnostics/clef-review', {
+      method: 'POST',
+      body: JSON.stringify({ asset_id: assetId, diagnostic_id: diagnosticId, issue }),
+    });
   }
 
   public async getDesktopWindows(): Promise<DesktopWindow[]> {

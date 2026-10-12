@@ -77,6 +77,72 @@ async def test_offset_timestamps_are_required_and_normalized_at_api_boundary():
 
 
 @pytest.mark.asyncio
+async def test_local_device_detection_is_local_only_and_never_auto_registers(monkeypatch):
+    from backend.app.api import assets as assets_api
+
+    monkeypatch.setattr(assets_api, "detect_device_identity", lambda: {"manufacturer": "Test Maker", "model": "Model Z1"})
+    headers = {"Origin": "http://localhost:5173"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://127.0.0.1", headers=headers) as client:
+        detected = await client.get("/api/v1/assets/local-device")
+        assert detected.status_code == 200
+        assert detected.json()["suggested_name"] == "Test Maker Model Z1"
+        assert detected.json()["existing_asset_id"] is None
+        assert (await client.get("/api/v1/assets")).json()["total"] == 3
+
+        created = await client.post("/api/v1/assets", json={
+            "name": "Test PC", "category": "computer", "manufacturer": " test maker ", "model": "model z1",
+        })
+        assert created.status_code == 201
+        duplicate = await client.get("/api/v1/assets/local-device")
+        assert duplicate.json()["existing_asset_id"] == created.json()["id"]
+        assert duplicate.json()["existing_asset_name"] == "Test PC"
+
+        blocked = await client.get("/api/v1/assets/local-device", headers={"Origin": "https://example.org"})
+        assert blocked.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_local_report_match_and_clef_review_are_read_only_advice(monkeypatch):
+    from backend.app.api import diagnostics as diagnostics_api
+    from backend.app.services.automation.models import Selection
+
+    monkeypatch.setattr(diagnostics_api, "detect_device_identity", lambda: {"manufacturer": "Lenovo", "model": "T480"})
+    monkeypatch.setattr(diagnostics_api, "collect", lambda asset_id: {
+        "asset_id": asset_id, "collected_at": "2035-02-03T09:00:00+00:00",
+        "os": {"name": "Windows", "version": "11"},
+        "memory": {"total_bytes": 16_000, "available_bytes": 8_000},
+        "disks": [{"label": "system", "total_bytes": 100_000, "free_bytes": 50_000}],
+        "cpu": {"logical_count": 8}, "collector_version": "test",
+    })
+
+    class FakeClef:
+        async def select_diagnostic_focus(self, state, choices):
+            assert state["reported_issue"] == "The laptop feels slow"
+            assert state["computer_model"] == {"manufacturer": "Lenovo", "model": "T480"}
+            assert "hostname" not in state
+            assert "hostname" not in state["read_only_report"]
+            return Selection(action_id="clarify_symptoms", probabilities={key: float(key == "clarify_symptoms") for key in choices}, confidence=0.8)
+
+    monkeypatch.setattr(diagnostics_api, "ClefSelector", FakeClef)
+    headers = {"Origin": "http://localhost:5173"}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://127.0.0.1", headers=headers) as client:
+        report = await client.post("/api/v1/diagnostics/collect-local", json={"asset_id": "asset_laptop_1"})
+        assert report.status_code == 201
+        assert report.json()["asset_id"] == "asset_laptop_1"
+
+        reviewed = await client.post("/api/v1/diagnostics/clef-review", json={
+            "asset_id": "asset_laptop_1", "diagnostic_id": report.json()["id"], "issue": "The laptop feels slow",
+        })
+        assert reviewed.status_code == 200
+        assert reviewed.json()["focus"] == "clarify_symptoms"
+        assert reviewed.json()["title"] == "Gather a few details"
+        assert reviewed.json()["recommendation"].startswith("Ask when the issue started")
+
+        mismatch = await client.post("/api/v1/diagnostics/collect-local", json={"asset_id": "asset_machine_1"})
+        assert mismatch.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_factory_rejects_conflicts_in_both_orders_and_allows_touching_windows():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://127.0.0.1") as client:
         production = await client.post("/api/v1/production", json={

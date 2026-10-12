@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Asset, DesktopSession, DesktopWindow, Diagnostic, ScreenshotAdvice } from '../../types';
+import { Asset, DesktopSession, DesktopWindow, Diagnostic, DiagnosticTriageResponse, ScreenshotAdvice } from '../../types';
 import { Activity, Check, CircleStop, Computer, FileText, Image, RefreshCw, ShieldCheck, Sparkles } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { pollJob } from '../../api/polling';
@@ -26,12 +26,19 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
   const [session, setSession] = useState<DesktopSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  const [diagnosticAssetId, setDiagnosticAssetId] = useState(selectedAssetId || '');
   const [diagnosticFile, setDiagnosticFile] = useState<File | null>(null);
+  const [diagnosticIssue, setDiagnosticIssue] = useState('');
+  const [diagnosticTriage, setDiagnosticTriage] = useState<DiagnosticTriageResponse | null>(null);
+  const [collectingLocal, setCollectingLocal] = useState(false);
+  const [reviewingDiagnostic, setReviewingDiagnostic] = useState(false);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotAdvice, setScreenshotAdvice] = useState<ScreenshotAdvice | null>(null);
   const [question, setQuestion] = useState('What should I check on this screen?');
 
   const selectedWindow = windows.find((item) => `${item.handle}:${item.process_id}` === windowKey);
+  const diagnosticAsset = assets.find((item) => item.id === diagnosticAssetId);
+  const canCollectLocalReport = diagnosticAsset?.category === 'computer';
   const desktopActivity = session ? buildDesktopActivity(session.debug_events, session.status) : [];
   const desktopHasError = session ? hasDesktopSessionError(session) : false;
 
@@ -51,20 +58,47 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
     }
   };
 
-  const refreshDiagnostics = async () => {
-    try { setDiagnostics(await apiClient.getDiagnostics(selectedAssetId)); }
+  const refreshDiagnostics = async (assetId = diagnosticAssetId) => {
+    if (!assetId) { setDiagnostics([]); return; }
+    try { setDiagnostics(await apiClient.getDiagnostics(assetId)); }
     catch (err) { onError(err); }
   };
+
+  const collectLocalReport = async () => {
+    if (!diagnosticAssetId || !canCollectLocalReport) return;
+    setCollectingLocal(true);
+    setDiagnosticTriage(null);
+    try {
+      const report = await apiClient.collectLocalDiagnostic(diagnosticAssetId);
+      setDiagnostics((current) => [report, ...current.filter((item) => item.id !== report.id)]);
+    } catch (err) { onError(err); }
+    finally { setCollectingLocal(false); }
+  };
+
+  const reviewDiagnostic = async () => {
+    const latest = diagnostics[0];
+    if (!diagnosticAssetId || !latest || !diagnosticIssue.trim()) return;
+    setReviewingDiagnostic(true);
+    setDiagnosticTriage(null);
+    try {
+      setDiagnosticTriage(await apiClient.reviewDiagnosticWithClef(diagnosticAssetId, latest.id, diagnosticIssue.trim()));
+    } catch (err) { onError(err); }
+    finally { setReviewingDiagnostic(false); }
+  };
+
+  useEffect(() => {
+    setDiagnosticAssetId(selectedAssetId || '');
+  }, [selectedAssetId]);
 
   useEffect(() => {
     if (tab === 'desktop' && liveMode) {
       refreshWindows();
       apiClient.getDesktopSessions().then((items) => { if (items.length) setSession((current) => current || items[0]); }).catch(onError);
     }
-    if (tab === 'diagnostics') refreshDiagnostics();
+    if (tab === 'diagnostics') refreshDiagnostics(diagnosticAssetId);
     // Refresh only when the teacher changes the active tool or data source.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, liveMode, selectedAssetId]);
+  }, [tab, liveMode, selectedAssetId, diagnosticAssetId]);
 
   useEffect(() => {
     if (!session || session.status !== 'running') return;
@@ -118,11 +152,11 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
 
   const uploadDiagnostic = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!diagnosticFile || !selectedAssetId) return;
+    if (!diagnosticFile || !diagnosticAssetId) return;
     setLoading(true);
     try {
       const parsed = JSON.parse(await diagnosticFile.text());
-      await apiClient.createDiagnostic({ ...parsed, asset_id: selectedAssetId });
+      await apiClient.createDiagnostic({ ...parsed, asset_id: diagnosticAssetId });
       setDiagnosticFile(null);
       await refreshDiagnostics();
     } catch (err) { onError(err); }
@@ -236,9 +270,29 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
       </div>}
 
       {tab === 'diagnostics' && <div className="support-body">
-        <div className="support-explainer"><FileText size={18} /><p><strong>Imported reports only.</strong> Reports are supplied by the teacher or collected separately; this screen does not scan or change a computer.</p></div>
-        <div className="diagnostic-toolbar"><label>Equipment record<select value={selectedAssetId || ''} onChange={(event) => { const match = assets.find((item) => item.id === event.target.value); if (match) void apiClient.getDiagnostics(match.id).then(setDiagnostics).catch(onError); }}><option value="">Select equipment</option>{assets.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><form className="import-form" onSubmit={uploadDiagnostic}><label>Import diagnostic JSON<input type="file" accept="application/json,.json" onChange={(event) => setDiagnosticFile(event.target.files?.[0] || null)} /></label><button className="btn-secondary" disabled={!diagnosticFile || !selectedAssetId || loading}>Import report</button></form></div>
-        {diagnostics.length === 0 ? <div className="support-empty"><FileText size={24} /><h3>No report saved for this equipment</h3><p>Import a JSON report to keep it with the equipment record.</p></div> : <div className="diagnostic-list">{diagnostics.map((item) => <article key={item.id}><div><strong>{item.os.name} {item.os.version}</strong><small>{formatKolkata(item.collected_at)} · collector {item.collector_version}</small></div><span>{item.cpu.logical_count} CPU threads</span><span>{formatBytes(item.memory.available_bytes)} available memory</span><span>{item.disks.length} disk{item.disks.length === 1 ? '' : 's'}</span></article>)}</div>}
+        <div className="support-explainer"><FileText size={18} /><p><strong>Read-only PC report.</strong> Collect basic system facts from this Windows PC and save them to its matching equipment record. Nothing is changed. Clef can recommend one safe next check from a report; it cannot run commands or repair the PC.</p></div>
+        <div className="diagnostic-toolbar">
+          <label>Equipment record<select value={diagnosticAssetId} onChange={(event) => {
+            const id = event.target.value;
+            setDiagnosticAssetId(id);
+            setDiagnostics([]);
+            setDiagnosticTriage(null);
+          }}><option value="">Select equipment</option>{assets.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <button type="button" className="btn-secondary" onClick={collectLocalReport} disabled={!canCollectLocalReport || collectingLocal || !liveMode}>{collectingLocal ? 'Collecting…' : 'Collect report from this PC'}</button>
+          <form className="import-form" onSubmit={uploadDiagnostic}><label>Import diagnostic JSON<input type="file" accept="application/json,.json" onChange={(event) => setDiagnosticFile(event.target.files?.[0] || null)} /></label><button className="btn-secondary" disabled={!diagnosticFile || !diagnosticAssetId || loading}>Import report</button></form>
+        </div>
+        <p className="field-hint">{diagnosticAsset && !canCollectLocalReport ? 'Local PC collection is only available for computer equipment records.' : 'Local collection requires the selected computer record to match this PC. Use “Detect this PC” in Equipment & Fleet first if needed.'}</p>
+        {diagnostics.length === 0 ? <div className="support-empty"><FileText size={24} /><h3>No report saved for this equipment</h3><p>Collect a read-only report from this PC or import an existing JSON report.</p></div> : <>
+          <div className="diagnostic-list">{diagnostics.map((item) => <article key={item.id}><div><strong>{item.os.name} {item.os.version}</strong><small>{formatKolkata(item.collected_at)} · collector {item.collector_version}</small></div><span>{item.cpu.logical_count} CPU threads</span><span>{formatBytes(item.memory.available_bytes)} available memory</span><span>{item.disks.length} disk{item.disks.length === 1 ? '' : 's'}</span></article>)}</div>
+          <section className="diagnostic-clef-card" aria-labelledby="diagnostic-clef-heading">
+            <h3 id="diagnostic-clef-heading">Ask Clef what to check next</h3>
+            <label htmlFor="diagnostic-issue">What problem are you seeing?</label>
+            <textarea id="diagnostic-issue" rows={2} maxLength={500} value={diagnosticIssue} onChange={(event) => setDiagnosticIssue(event.target.value)} placeholder="For example: the laptop feels slow when opening course software" />
+            <p className="field-hint">On request, the issue description and this report’s OS, memory, disk, and CPU values are sent to Cloudflare Clef. Clef selects from fixed read-only advice; it does not execute checks.</p>
+            <button type="button" className="btn-primary" onClick={reviewDiagnostic} disabled={!diagnosticIssue.trim() || reviewingDiagnostic}>{reviewingDiagnostic ? 'Asking Clef…' : 'Get a safe next-check suggestion'}</button>
+            {diagnosticTriage && <div className="diagnostic-triage-result" role="status"><strong>{diagnosticTriage.title}</strong><p>{diagnosticTriage.recommendation}</p><small>Clef confidence: {Math.round(diagnosticTriage.confidence * 100)}% · Advice only; no system action was run.</small></div>}
+          </section>
+        </>}
       </div>}
     </section>
   );

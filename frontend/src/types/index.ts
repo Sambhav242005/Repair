@@ -30,6 +30,14 @@ export interface UpdateAssetInput {
   mass_kg?: number | null;
 }
 
+export interface LocalDeviceCandidate {
+  manufacturer: string;
+  model: string;
+  suggested_name: string;
+  existing_asset_id: string | null;
+  existing_asset_name: string | null;
+}
+
 export type CaseStatus = 'open' | 'analysing' | 'ready' | 'closed';
 export type CaseOutcome = 'repaired' | 'unresolved' | 'replaced' | null;
 
@@ -146,6 +154,14 @@ export interface CreateDiagnosticInput {
     logical_count: number;
   };
   collector_version: string;
+}
+
+export interface DiagnosticTriageResponse {
+  focus: string;
+  title: string;
+  recommendation: string;
+  confidence: number;
+  probabilities: Record<string, number>;
 }
 
 export type MaintenanceStatus = 'scheduled' | 'completed' | 'cancelled';

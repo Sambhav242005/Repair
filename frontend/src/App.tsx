@@ -263,6 +263,7 @@ export const App: React.FC = () => {
                   <summary>Manage lab equipment <span>{assets.length} records</span></summary>
                   <AssetList
                     assets={assets}
+                    liveMode={apiMode === 'live'}
                     selectedAssetId={selectedAssetId}
                     onSelectAsset={(a) => setSelectedAssetId(a.id)}
                     onCreateAsset={async (input) => { await apiClient.createAsset(input); setAssets(await apiClient.getAssets()); }}
