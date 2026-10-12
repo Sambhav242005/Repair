@@ -1,5 +1,19 @@
 # Repair Before Replace — SRS and Integration Contract
-Version: 1.0 | Team: four people | Target: five-hour hackathon MVP
+Version: 1.1 | Team: Sambhav plus two teammates | Native desktop amendment: 2026-10-12
+
+## Native desktop amendment (supersedes browser execution requirements below)
+
+The user selected native Windows computer use with Ollama `gemma4:31b-cloud` planning and Cloudflare `@cf/cloudflare/clef` Choice selection. Browser automation is deprecated. Old BrowserResult/BrowserRunRequest routes remain compatibility surfaces and must fail explicitly with `PROVIDER_UNAVAILABLE`; browser actions cannot satisfy FR-07 or the computer-use demo/acceptance requirements. Repair, diagnostics and factory wire schemas remain unchanged.
+
+FR-07 now requires an explicitly selected supported Windows application, grounded UI Automation controls, one bounded action at a time, fresh independent effect verification, actual trace, visible Stop and explicit provider/execution failure. Supported milestone policy is Calculator arithmetic/digits and read-only Task Manager/Settings navigation. Shell, installation, deletion, purchases, credentials, process termination and factory machinery control are excluded. No arbitrary coordinates or model-generated executable code are offered.
+
+The delivered local service contract lives in `backend/app/services/automation/models.py`: Window(handle,process_id,application), Observation(snapshot_id,captured_monotonic,window,controls), Candidate(id,snapshot_id,operation,control_id,argument,expected_effect,stop_condition), Acceptance(automation_id,name_equals), Selection(action_id,probabilities,confidence), Trace(before_snapshot,after_snapshot,action,effect_verified,status) and SessionResult(status,message,trace,error_code). Trace status is verified/no_effect/failed/interrupted; after_snapshot is null when verification was unavailable. Acceptance is supplied by the user, never by a model. Session statuses are succeeded/stopped/needs_user/failed. A model's done answer and an input receipt cannot establish success.
+
+Local operations: enumerate windows, construct DesktopSession with goal/acceptance, await run, read status/trace, and request stop. Defaults are 12 actions/120 seconds, hard maximums 30/180, eight-second Windows helper deadline and 30-second Clef inference deadline. Refresh after inference; re-ground only unchanged state/runtime targets; input snapshots expire after five seconds. Stop cancels pending work and blocks subsequent input; already delivered input cannot be undone. Three no-effect observations stop the session. Selected app context is untrusted data. Default cloud state omits OS handles, process IDs, titles and edit values; screenshots are optional local-only captures.
+
+The local Tkinter runner supplies Start/Observe/Stop. Network session routes, registry/job persistence, restart recovery and React integration are still assigned to Teammates 2 and 1; these endpoints are not yet implemented. Any future desktop endpoint must be local-only, require explicit selection/consent, and enforce the same host policy. Never expose unrestricted desktop control through the existing HOST=0.0.0.0 API configuration.
+
+Native acceptance replacing the old browser check: selected Calculator control changes the display to the user-supplied value, fresh observation verifies it, Stop blocks further input, and actual action trace is recorded. Then verify read-only diagnostic navigation. These live checks are pending because the user chose to open Calculator later. Synthetic fixtures and offline simulated state are labelled, and cannot be presented as actual desktop activity.
 
 ## 1. Problem and goal
 Devices and factory equipment are replaced prematurely because fault diagnosis, repair knowledge, and maintenance planning are disconnected. Build software that helps users investigate faults, document repair outcomes, and plan maintenance, training lessons, and production around equipment availability.

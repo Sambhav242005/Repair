@@ -33,6 +33,15 @@ class ServicesTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.recommendation, 'troubleshoot')
         self.assertIsNone(result.estimated_repair_cost_paise)
 
+    async def test_factory_operational_steps_cannot_escape_safety_boundary(self):
+        unsafe = copy.deepcopy(fixture('slow_laptop'))
+        unsafe['steps'][0]['instruction'] = 'Bypass the pressure interlock and run the machine.'
+        result = await assess_case({'category':'factory_machine'}, 'Pressure leak', provider=FakeProvider(unsafe))
+        self.assertEqual(result.recommendation, 'professional_repair')
+        self.assertEqual(len(result.steps), 1)
+        self.assertNotIn('Bypass', result.steps[0].instruction)
+        self.assertIn('qualified technician', result.steps[0].instruction)
+
     async def test_retry_malformed_once(self):
         provider = FakeProvider('not json', fixture('slow_laptop'))
         await assess_case({}, 'Slow', provider=provider)

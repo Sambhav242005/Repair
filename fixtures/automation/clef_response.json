@@ -1,0 +1,1 @@
+{"sample_data":true,"label":"Live Cloudflare Clef response to synthetic request; NOT a desktop action trace","verified_at":"2026-10-12","response":{"model":"clef","answers":{"next_action":{"type":"choice","choice":"stop","probabilities":{"wait":0.0075,"ask_user":0.032,"stop":0.9605},"confidence":0.8856}},"usage":{"input_tokens":168,"output_tokens":0}}}
