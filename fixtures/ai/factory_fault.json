@@ -1,0 +1,30 @@
+{
+  "sample_data": true,
+  "label": "Hand-authored sample: factory_fault",
+  "result": {
+    "summary": "Reported pressure fault requires qualified technician assessment.",
+    "hypotheses": [
+      {
+        "cause": "A pressure-system fault is plausible but unconfirmed.",
+        "likelihood": "medium",
+        "evidence": []
+      }
+    ],
+    "uncertainties": [
+      "No verified service manual or technician measurements."
+    ],
+    "steps": [
+      {
+        "id": "step_1",
+        "instruction": "Contact a qualified technician and report the visible fault from a safe distance.",
+        "expected_result": "Technician takes responsibility for inspection under the approved site procedure.",
+        "stop_condition": "Do not approach leaking equipment, open panels or bypass interlocks.",
+        "status": "pending"
+      }
+    ],
+    "recommendation": "professional_repair",
+    "evidence": [],
+    "estimated_repair_cost_paise": null,
+    "cost_basis": null
+  }
+}
