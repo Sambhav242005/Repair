@@ -18,6 +18,7 @@ const pause = (ms: number) => new Promise((resolve) => window.setTimeout(resolve
 export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAssetId, liveMode, onError }) => {
   const [tab, setTab] = useState<PanelTab>('desktop');
   const [windows, setWindows] = useState<DesktopWindow[]>([]);
+  const [windowScanState, setWindowScanState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [windowKey, setWindowKey] = useState('');
   const [goal, setGoal] = useState('Display 7 in Calculator');
   const [automationId, setAutomationId] = useState('CalculatorResults');
@@ -36,11 +37,18 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
 
   const refreshWindows = async () => {
     if (!liveMode) return;
+    setWindowScanState('loading');
     try {
       const result = await apiClient.getDesktopWindows();
       setWindows(result);
+      setWindowScanState('ready');
       if (!result.some((item) => `${item.handle}:${item.process_id}` === windowKey)) setWindowKey('');
-    } catch (err) { onError(err); }
+    } catch (err) {
+      setWindows([]);
+      setWindowKey('');
+      setWindowScanState('error');
+      onError(err);
+    }
   };
 
   const refreshDiagnostics = async () => {
@@ -161,8 +169,11 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
               <div className="field-inline"><select value={selectedWindow ? `${selectedWindow.handle}:${selectedWindow.process_id}` : ''} onChange={(event) => setWindowKey(event.target.value)} required>
                 <option value="">Choose an open app</option>
                 {windows.map((item) => <option key={`${item.handle}:${item.process_id}`} value={`${item.handle}:${item.process_id}`}>{item.application === 'Calculator' ? 'Calculator' : item.application === 'Settings' ? 'Settings' : 'Task Manager'} · window {item.handle}</option>)}
-              </select><button type="button" className="icon-action" title="Refresh open windows" aria-label="Refresh open windows" onClick={refreshWindows}><RefreshCw size={16} /></button></div>
+              </select><button type="button" className="icon-action" title="Refresh open windows" aria-label="Refresh open windows" onClick={refreshWindows} disabled={windowScanState === 'loading'}><RefreshCw size={16} /></button></div>
             </label>
+            {windowScanState === 'loading' && <p className="desktop-window-status" role="status">Checking this PC for supported desktop apps…</p>}
+            {windowScanState === 'ready' && windows.length === 0 && <div className="desktop-window-empty" role="status"><Computer size={18} /><div><strong>No supported app window found</strong><p>Open Calculator, Settings, or Task Manager on your PC, then select “Refresh open windows.” Keep the app open while you inspect it. Browser tabs do not appear here.</p></div></div>}
+            {windowScanState === 'error' && <div className="desktop-window-empty desktop-window-error" role="alert"><Computer size={18} /><div><strong>Could not check open apps</strong><p>Check that the local backend is running, then select “Refresh open windows” to try again.</p></div></div>}
             <label>What should the computer do?
               <textarea rows={2} maxLength={500} value={goal} onChange={(event) => setGoal(event.target.value)} required placeholder="Describe the task in plain language" />
             </label>
@@ -179,8 +190,9 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
             <button className="btn-primary" type="submit" disabled={loading || !selectedWindow}><Sparkles size={16} />{loading ? 'Inspecting the app…' : 'Inspect and prepare a plan'}</button>
           </form>
           <div className="session-card">
-            <div className="session-title"><h3>{session ? session.app_title : 'Workflow review'}</h3>{session && <span className={`session-status status-${session.status}`}>{session.status.replace('_', ' ')}</span>}</div>
+            <div className="session-title"><h3>{session ? (!selectedWindow && session.status !== 'running' && session.status !== 'needs_approval' ? `Previous run · ${session.app_title}` : session.app_title) : 'Workflow review'}</h3>{session && <span className={`session-status status-${session.status}`}>{session.status.replace('_', ' ')}</span>}</div>
             {!session ? <p className="muted-copy">Choose an open app and describe a small task. You’ll see a clear summary of the proposed step before allowing any input.</p> : <>
+              {!selectedWindow && session.status !== 'running' && session.status !== 'needs_approval' && <p className="muted-copy">This is a saved result from an earlier run. A new run needs a supported app currently open above.</p>}
               <p className="session-message" role="status" aria-live="polite">{session.message}</p>
               {session.status === 'needs_approval' && <div className="approval-card"><h4>Review proposed computer action</h4><p>{describeProposedAction(session.proposed_action)}</p><p className="approval-note">No computer input has been sent. Approving allows this one reviewed step to run.</p><div className="approval-actions"><button className="btn-primary" disabled={loading} onClick={approve}><Check size={16} /> Approve this action</button><button className="btn-secondary" disabled={loading} onClick={stop}><CircleStop size={16} /> Stop</button></div></div>}
               {session.status === 'running' && <button className="btn-danger" disabled={loading} onClick={stop}><CircleStop size={16} /> Request stop</button>}
