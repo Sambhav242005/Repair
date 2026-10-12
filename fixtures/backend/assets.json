@@ -1,0 +1,32 @@
+{
+  "items": [
+    {
+      "id": "asset_laptop_1",
+      "name": "ThinkPad T480 Laptop",
+      "category": "computer",
+      "manufacturer": "Lenovo",
+      "model": "T480",
+      "status": "operational",
+      "mass_kg": 1.65
+    },
+    {
+      "id": "asset_machine_1",
+      "name": "5-Axis CNC Milling Center",
+      "category": "factory_machine",
+      "manufacturer": "Haas",
+      "model": "VF-2SS",
+      "status": "operational",
+      "mass_kg": 3500.0
+    },
+    {
+      "id": "asset_machine_2",
+      "name": "Electric Injection Molding Machine",
+      "category": "factory_machine",
+      "manufacturer": "Engel",
+      "model": "e-mac 100",
+      "status": "operational",
+      "mass_kg": 6200.0
+    }
+  ],
+  "total": 3
+}
