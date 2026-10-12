@@ -23,18 +23,21 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({ error, onRetry, onDism
       id="error-banner"
       role="alert"
       style={{
-        background: isConflict ? 'rgba(245, 158, 11, 0.12)' : 'rgba(244, 63, 94, 0.12)',
-        borderColor: isConflict ? 'rgba(245, 158, 11, 0.4)' : 'rgba(244, 63, 94, 0.4)',
+        backgroundColor: isConflict ? '#fffbeb' : '#fef2f2',
+        border: `1px solid ${isConflict ? '#fde68a' : '#fecaca'}`,
+        borderLeft: `4px solid ${isConflict ? '#f59e0b' : '#ef4444'}`,
+        borderRadius: '10px',
         padding: '16px 20px',
         marginBottom: '20px',
         display: 'flex',
         alignItems: 'flex-start',
         gap: '14px',
+        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
       }}
     >
       <AlertTriangle
         size={22}
-        color={isConflict ? '#f59e0b' : '#f43f5e'}
+        color={isConflict ? '#d97706' : '#dc2626'}
         style={{ flexShrink: 0, marginTop: '2px' }}
       />
 
@@ -43,23 +46,24 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({ error, onRetry, onDism
           <span
             style={{
               fontSize: '11px',
-              fontWeight: 700,
+              fontWeight: 800,
               fontFamily: 'var(--font-mono)',
               textTransform: 'uppercase',
               padding: '2px 8px',
               borderRadius: '4px',
-              background: isConflict ? 'rgba(245, 158, 11, 0.25)' : 'rgba(244, 63, 94, 0.25)',
-              color: isConflict ? '#fde68a' : '#fecdd3',
+              background: isConflict ? '#fef3c7' : '#fee2e2',
+              color: isConflict ? '#b45309' : '#b91c1c',
+              border: `1px solid ${isConflict ? '#fde68a' : '#fca5a5'}`,
             }}
           >
             {code}
           </span>
-          <strong style={{ fontSize: '14px', color: '#ffffff' }}>
-            {isConflict ? 'Conflict Rejected by System' : 'Request Error'}
+          <strong style={{ fontSize: '14px', color: '#0f172a' }}>
+            {isConflict ? 'Schedule Conflict Rejected' : 'Operation Notice'}
           </strong>
         </div>
 
-        <p style={{ color: '#e2e8f0', fontSize: '14px', lineHeight: 1.5, margin: '4px 0' }}>
+        <p style={{ color: '#334155', fontSize: '14px', lineHeight: 1.5, margin: '4px 0' }}>
           {message}
         </p>
 
@@ -67,29 +71,30 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({ error, onRetry, onDism
           <div
             style={{
               marginTop: '8px',
-              background: 'rgba(0, 0, 0, 0.3)',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
               borderRadius: '6px',
               padding: '8px 12px',
               fontFamily: 'var(--font-mono)',
               fontSize: '12px',
-              color: '#cbd5e1',
+              color: '#334155',
             }}
           >
             {Object.entries(details).map(([k, v]) => (
               <div key={k}>
-                <span style={{ color: '#94a3b8' }}>{k}:</span> {String(v)}
+                <span style={{ color: '#64748b', fontWeight: 600 }}>{k}:</span> {String(v)}
               </div>
             ))}
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
           {onRetry && (
             <button
               onClick={onRetry}
               className="btn-secondary"
               id="btn-error-retry"
-              style={{ fontSize: '12px', padding: '5px 12px' }}
+              style={{ fontSize: '12px', padding: '6px 14px' }}
             >
               <RefreshCw size={13} />
               Retry Operation
@@ -100,10 +105,12 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({ error, onRetry, onDism
               onClick={onDismiss}
               style={{
                 fontSize: '12px',
-                color: 'var(--text-muted)',
+                color: '#64748b',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px',
+                fontWeight: 600,
+                padding: '6px 10px',
               }}
             >
               <XCircle size={13} />

@@ -1,26 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Asset,
   BrowserSource,
   BrowserResult,
   ScreenshotAdvice,
   Diagnostic,
-  DesktopAppId,
-  DesktopSession,
 } from '../../types';
 import {
   Monitor,
   Globe,
   HardDrive,
+  Upload,
   Play,
-  Square,
   Terminal,
   CheckCircle2,
+  XCircle,
   AlertTriangle,
   Info,
-  Shield,
   Layers,
-  Sparkles,
+  ChevronRight,
+  ExternalLink,
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { pollJob } from '../../api/polling';
@@ -32,23 +31,14 @@ interface ComputerAssistancePanelProps {
   onError: (error: any) => void;
 }
 
-type PanelTab = 'screenshot' | 'browser' | 'diagnostics' | 'desktop';
+type PanelTab = 'screenshot' | 'browser' | 'diagnostics';
 
 export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = ({
   assets,
   selectedAssetId,
   onError,
 }) => {
-  const [activeTab, setActiveTab] = useState<PanelTab>('desktop');
-
-  // --- Desktop assistant state ---
-  const [selectedAppId, setSelectedAppId] = useState<DesktopAppId>('calculator');
-  const [desktopGoal, setDesktopGoal] = useState<string>(
-    'Execute 42 + 58 addition and verify result display is 100'
-  );
-  const [desktopSession, setDesktopSession] = useState<DesktopSession | null>(null);
-  const [desktopLoading, setDesktopLoading] = useState<boolean>(false);
-  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [activeTab, setActiveTab] = useState<PanelTab>('screenshot');
 
   // --- Screenshot guidance state ---
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
@@ -80,7 +70,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
     }
   }, [selectedAssetId]);
 
-  // Load browser sources
+  // Load browser sources & diagnostics
   useEffect(() => {
     apiClient
       .getBrowserSources()
@@ -92,98 +82,56 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
       })
       .catch((err) => console.warn('Failed to load browser sources:', err));
 
-    // Initial diagnostic preview
-    setSelectedDiagnostic({
-      id: 'diag_1',
-      asset_id: 'asset_laptop_1',
-      collected_at: '2026-10-12T08:30:00Z',
-      os: { name: 'Ubuntu GNU/Linux', version: '24.04 LTS (x86_64)' },
-      memory: { total_bytes: 16777216000, available_bytes: 1887436800 },
-      disks: [{ label: '/ (NVMe Root)', total_bytes: 512110190592, free_bytes: 17179869184 }],
-      cpu: { logical_count: 8 },
-      collector_version: '1.0.0-cli-safe',
-    });
-  }, []);
-
-  // Poll desktop session while running
-  useEffect(() => {
-    if (desktopSession && desktopSession.status === 'running') {
-      pollTimerRef.current = setInterval(async () => {
-        try {
-          const fresh = await apiClient.getDesktopSession(desktopSession.id);
-          setDesktopSession(fresh);
-          if (fresh.status !== 'running') {
-            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-            setDesktopLoading(false);
-          }
-        } catch {
-          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-          setDesktopLoading(false);
-        }
-      }, 500);
+    // Load initial diagnostics from mock/api
+    if (browserAssetId) {
+      setSelectedDiagnostic({
+        id: 'diag_1',
+        asset_id: 'asset_laptop_1',
+        collected_at: '2026-10-12T08:30:00Z',
+        os: { name: 'Ubuntu GNU/Linux', version: '24.04 LTS (x86_64)' },
+        memory: { total_bytes: 16777216000, available_bytes: 1887436800 },
+        disks: [{ label: '/ (NVMe Root)', total_bytes: 512110190592, free_bytes: 17179869184 }],
+        cpu: { logical_count: 8 },
+        collector_version: '1.0.0-cli-safe',
+      });
     }
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-    };
-  }, [desktopSession?.id, desktopSession?.status]);
-
-  // Handler: Start Desktop Session
-  const handleStartDesktopSession = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setDesktopLoading(true);
-    try {
-      const session = await apiClient.startDesktopSession(selectedAppId, desktopGoal);
-      setDesktopSession(session);
-    } catch (err: any) {
-      onError(err);
-      setDesktopLoading(false);
-    }
-  };
-
-  // Handler: Stop Desktop Session
-  const handleStopDesktopSession = async () => {
-    if (!desktopSession) return;
-    try {
-      const stopped = await apiClient.stopDesktopSession(desktopSession.id);
-      setDesktopSession(stopped);
-      setDesktopLoading(false);
-    } catch (err: any) {
-      onError(err);
-    }
-  };
+  }, [browserAssetId]);
 
   // Handler: Screenshot upload & advice
   const handleScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    setScreenshotFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setScreenshotPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        onError({ error: { code: 'FILE_TOO_LARGE', message: 'Screenshot must be under 5MB.' } });
+        return;
+      }
+      setScreenshotFile(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setScreenshotPreview(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleRunScreenshotAdvice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!screenshotFile && !screenshotPreview) {
-      setScreenshotPreview(
-        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" fill="%231e293b"><rect width="400" height="250"/><text x="50" y="50" fill="%23fff" font-size="16">System Storage Settings</text><rect x="50" y="80" width="300" height="25" fill="%23f43f5e"/><text x="60" y="98" fill="%23fff" font-size="12">C: Drive - 96% Full (16 GB Free)</text><rect x="50" y="130" width="160" height="30" rx="4" fill="%230ea5e9"/><text x="65" y="150" fill="%23fff" font-size="12">Clean up system files</text></svg>'
-      );
-    }
-
     setScreenshotLoading(true);
     setScreenshotAdvice(null);
     const abortCtrl = new AbortController();
 
     try {
-      let scrId = 'scr_demo_1';
+      let uploadId = 'upload_mock_1';
       if (screenshotFile) {
         const uploadRes = await apiClient.uploadScreenshot(screenshotFile);
-        scrId = uploadRes.id;
+        uploadId = uploadRes.id;
       }
-      const { job_id } = await apiClient.requestScreenshotAdvice(scrId, screenshotQuestion);
+
+      const { job_id } = await apiClient.requestScreenshotAdvice(uploadId, screenshotQuestion);
       const completedJob = await pollJob<ScreenshotAdvice>(job_id, {
         signal: abortCtrl.signal,
         intervalMs: 2000,
+        maxWaitMs: 30000,
       });
       setScreenshotAdvice(completedJob.result);
     } catch (err: any) {
@@ -195,14 +143,13 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
     }
   };
 
-  // Handler: Playwright Browser Assistant
+  // Handler: Playwright Browser assistant
   const handleRunBrowserAssistant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSourceId) {
-      onError({ error: { code: 'VALIDATION_ERROR', message: 'Please select an approved documentation source.' } });
+      onError({ error: { code: 'VALIDATION_ERROR', message: 'Select an approved source ID.' } });
       return;
     }
-
     setBrowserLoading(true);
     setBrowserResult(null);
     const abortCtrl = new AbortController();
@@ -245,18 +192,51 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
   };
 
   return (
-    <div className="card" id="computer-assistance-panel" style={{ padding: '24px', marginTop: '24px' }}>
+    <div
+      className="card"
+      id="computer-assistance-panel"
+      style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: '12px',
+        padding: '24px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+      }}
+    >
       {/* Panel Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '20px',
+          flexWrap: 'wrap',
+          gap: '12px',
+          borderBottom: '2px solid #f1f5f9',
+          paddingBottom: '16px',
+        }}
+      >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Terminal size={20} color="var(--brand-cyan)" />
-            <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-bright)' }}>
-              Computer &amp; Desktop Assistance Panel
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                backgroundColor: '#ebf5ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Terminal size={18} color="#0071ce" />
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+              Computer Assistance &amp; Diagnostics Tools
             </h2>
           </div>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Multi-modal investigation: Native Windows UI Automation, Screenshot vision, sandboxed Playwright, and host telemetry.
+          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+            Multi-modal investigation: screen inspection advice, sandboxed OEM manual lookup, and system diagnostics.
           </p>
         </div>
 
@@ -264,341 +244,91 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
         <div
           style={{
             display: 'flex',
-            background: 'rgba(255, 255, 255, 0.04)',
+            backgroundColor: '#f1f5f9',
             padding: '4px',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-subtle)',
-            flexWrap: 'wrap',
+            borderRadius: '8px',
+            border: '1px solid #e2e8f0',
             gap: '4px',
           }}
         >
           <button
-            id="tab-btn-desktop"
-            onClick={() => setActiveTab('desktop')}
-            style={{
-              padding: '6px 14px',
-              fontSize: '12px',
-              fontWeight: 700,
-              borderRadius: '6px',
-              background: activeTab === 'desktop' ? 'var(--brand-cyan)' : 'transparent',
-              color: activeTab === 'desktop' ? '#ffffff' : 'var(--text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <Shield size={14} /> Native Desktop Assistant
-          </button>
-
-          <button
             id="tab-btn-screenshot"
             onClick={() => setActiveTab('screenshot')}
             style={{
-              padding: '6px 14px',
+              padding: '8px 14px',
               fontSize: '12px',
-              fontWeight: 600,
+              fontWeight: 700,
               borderRadius: '6px',
-              background: activeTab === 'screenshot' ? 'var(--brand-cyan)' : 'transparent',
-              color: activeTab === 'screenshot' ? '#ffffff' : 'var(--text-muted)',
+              backgroundColor: activeTab === 'screenshot' ? '#ffffff' : 'transparent',
+              color: activeTab === 'screenshot' ? '#0071ce' : '#64748b',
+              boxShadow: activeTab === 'screenshot' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
             }}
           >
-            <Monitor size={14} /> Screenshot Guidance
+            <Monitor size={14} /> Screen Guidance
           </button>
 
           <button
             id="tab-btn-browser"
             onClick={() => setActiveTab('browser')}
             style={{
-              padding: '6px 14px',
+              padding: '8px 14px',
               fontSize: '12px',
-              fontWeight: 600,
+              fontWeight: 700,
               borderRadius: '6px',
-              background: activeTab === 'browser' ? 'var(--brand-cyan)' : 'transparent',
-              color: activeTab === 'browser' ? '#ffffff' : 'var(--text-muted)',
+              backgroundColor: activeTab === 'browser' ? '#ffffff' : 'transparent',
+              color: activeTab === 'browser' ? '#0071ce' : '#64748b',
+              boxShadow: activeTab === 'browser' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
             }}
           >
-            <Globe size={14} /> Browser Docs
+            <Globe size={14} /> OEM Manuals
           </button>
 
           <button
             id="tab-btn-diagnostics"
             onClick={() => setActiveTab('diagnostics')}
             style={{
-              padding: '6px 14px',
+              padding: '8px 14px',
               fontSize: '12px',
-              fontWeight: 600,
+              fontWeight: 700,
               borderRadius: '6px',
-              background: activeTab === 'diagnostics' ? 'var(--brand-cyan)' : 'transparent',
-              color: activeTab === 'diagnostics' ? '#ffffff' : 'var(--text-muted)',
+              backgroundColor: activeTab === 'diagnostics' ? '#ffffff' : 'transparent',
+              color: activeTab === 'diagnostics' ? '#0071ce' : '#64748b',
+              boxShadow: activeTab === 'diagnostics' ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
             }}
           >
-            <HardDrive size={14} /> PC Diagnostics
+            <HardDrive size={14} /> PC Telemetry
           </button>
         </div>
       </div>
 
-      {/* TAB: Native Desktop Assistant (Clef + UI Automation) */}
-      {activeTab === 'desktop' && (
-        <div id="tab-content-desktop" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div
-            style={{
-              background: 'rgba(14, 165, 233, 0.08)',
-              border: '1px solid rgba(14, 165, 233, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              padding: '14px 18px',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              fontSize: '12px',
-              color: '#bae6fd',
-            }}
-          >
-            <Shield size={18} color="var(--brand-cyan)" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <strong style={{ color: '#ffffff' }}>Native Windows Computer Use (Clef Architecture):</strong>{' '}
-              Operates exclusively via Windows UI Automation on explicitly targeted application windows. Bounded candidate controls only; Stop control immediately aborts execution. Displays independently verified UI states rather than unverified model assertions.
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-            {/* Control Form */}
-            <form onSubmit={handleStartDesktopSession} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
-                  Target Application Window *
-                </label>
-                <select
-                  id="select-desktop-app"
-                  value={selectedAppId}
-                  onChange={(e) => setSelectedAppId(e.target.value as DesktopAppId)}
-                  disabled={desktopSession?.status === 'running'}
-                  required
-                >
-                  <option value="calculator" style={{ background: '#0b101c' }}>
-                    Windows Calculator (calc.exe) — Proof: Key Input &amp; Display State
-                  </option>
-                  <option value="settings" style={{ background: '#0b101c' }}>
-                    Windows Settings (ms-settings:storage) — Storage Inspection
-                  </option>
-                  <option value="taskmgr" style={{ background: '#0b101c' }}>
-                    Task Manager (taskmgr.exe) — Memory Headroom Observer
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
-                  Desktop Automation Goal / Instructions *
-                </label>
-                <textarea
-                  id="textarea-desktop-goal"
-                  rows={3}
-                  required
-                  value={desktopGoal}
-                  onChange={(e) => setDesktopGoal(e.target.value)}
-                  disabled={desktopSession?.status === 'running'}
-                  placeholder="e.g. Execute 42 + 58 addition and verify result display is 100"
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  id="btn-start-desktop-session"
-                  type="submit"
-                  disabled={desktopSession?.status === 'running'}
-                  className="btn-primary"
-                  style={{ flex: 1, padding: '10px' }}
-                >
-                  {desktopSession?.status === 'running' ? (
-                    <>
-                      <div className="spinner" /> Executing Action Steps...
-                    </>
-                  ) : (
-                    <>
-                      <Play size={14} /> Start Desktop Automation
-                    </>
-                  )}
-                </button>
-
-                {desktopSession?.status === 'running' && (
-                  <button
-                    id="btn-stop-desktop-session"
-                    type="button"
-                    onClick={handleStopDesktopSession}
-                    className="btn-danger"
-                    style={{ padding: '10px 18px' }}
-                    title="Abort desktop execution immediately"
-                  >
-                    <Square size={14} fill="#fb7185" /> STOP
-                  </button>
-                )}
-              </div>
-            </form>
-
-            {/* Live Action Trace & Verification State */}
-            <div
-              style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)',
-                padding: '18px',
-                minHeight: '260px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-bright)' }}>
-                  Observable Desktop Action Trace
-                </h3>
-                {desktopSession && (
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      background:
-                        desktopSession.status === 'completed'
-                          ? 'rgba(16, 185, 129, 0.2)'
-                          : desktopSession.status === 'running'
-                          ? 'rgba(14, 165, 233, 0.2)'
-                          : 'rgba(244, 63, 94, 0.2)',
-                      color:
-                        desktopSession.status === 'completed'
-                          ? '#34d399'
-                          : desktopSession.status === 'running'
-                          ? '#38bdf8'
-                          : '#fb7185',
-                    }}
-                  >
-                    Status: {desktopSession.status}
-                  </span>
-                )}
-              </div>
-
-              {desktopSession ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-                  {/* Verified Result Banner */}
-                  {desktopSession.verified_result && (
-                    <div
-                      style={{
-                        padding: '10px 14px',
-                        background: 'rgba(16, 185, 129, 0.12)',
-                        border: '1px solid rgba(16, 185, 129, 0.35)',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        color: '#34d399',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <CheckCircle2 size={16} />
-                      <strong>Verified Display:</strong> {desktopSession.verified_result}
-                    </div>
-                  )}
-
-                  {desktopSession.status === 'stopped' && (
-                    <div
-                      style={{
-                        padding: '10px 14px',
-                        background: 'rgba(244, 63, 94, 0.12)',
-                        border: '1px solid rgba(244, 63, 94, 0.35)',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        color: '#fb7185',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <AlertTriangle size={16} />
-                      <strong>Session Aborted:</strong> User stop command interrupted subsequent actions immediately.
-                    </div>
-                  )}
-
-                  {/* Sequential Action Trace */}
-                  <div
-                    style={{
-                      flex: 1,
-                      background: '#070a12',
-                      borderRadius: '6px',
-                      padding: '10px',
-                      border: '1px solid var(--border-subtle)',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '11px',
-                      overflowY: 'auto',
-                      maxHeight: '220px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '6px',
-                    }}
-                  >
-                    {desktopSession.steps.length === 0 ? (
-                      <span style={{ color: 'var(--text-dim)' }}>Connecting to UI Automation framework...</span>
-                    ) : (
-                      desktopSession.steps.map((st) => (
-                        <div
-                          key={st.step_number}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            padding: '4px 6px',
-                            borderRadius: '4px',
-                            background: 'rgba(255, 255, 255, 0.02)',
-                          }}
-                        >
-                          <span style={{ color: '#cbd5e1' }}>
-                            <strong style={{ color: '#0ea5e9' }}>#{st.step_number}</strong> [{st.control_name} ({st.control_type})] -&gt; {st.action}({st.value || ''})
-                          </span>
-                          <span style={{ color: st.status === 'succeeded' ? '#34d399' : '#fb7185' }}>
-                            {st.verified_state}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dim)', fontSize: '13px' }}>
-                  Select an application and goal above, then click "Start Desktop Automation" to observe real-time UI Automation execution and verify the Stop control.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* TAB 1: Screenshot Guidance */}
       {activeTab === 'screenshot' && (
-        <div id="tab-content-screenshot" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div id="tab-content-screenshot" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
             style={{
-              background: 'rgba(245, 158, 11, 0.08)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              borderRadius: 'var(--radius-md)',
+              backgroundColor: '#fffbeb',
+              border: '1px solid #fde68a',
+              borderRadius: '8px',
               padding: '12px 16px',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              fontSize: '12px',
-              color: '#fde68a',
+              fontSize: '13px',
+              color: '#92400e',
             }}
           >
-            <Info size={16} color="#f59e0b" style={{ flexShrink: 0 }} />
+            <Info size={16} color="#d97706" style={{ flexShrink: 0 }} />
             <span>
-              <strong>Contract Rule:</strong> Screenshot response provides visual control guidance only. It is never labeled as an executed action on the user’s computer.
+              <strong>Visual Guidance Only:</strong> This panel identifies visible controls and buttons from your image. It never executes or clicks actions inside the computer.
             </span>
           </div>
 
@@ -606,7 +336,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
             {/* Input Form & Preview */}
             <form onSubmit={handleRunScreenshotAdvice} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
                   Upload Screen Snapshot (PNG / JPEG &lt; 5MB)
                 </label>
                 <input
@@ -614,7 +344,13 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                   type="file"
                   accept="image/png,image/jpeg"
                   onChange={handleScreenshotSelect}
-                  style={{ fontSize: '12px', padding: '8px' }}
+                  style={{
+                    fontSize: '12px',
+                    padding: '8px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                  }}
                 />
               </div>
 
@@ -623,8 +359,8 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                   style={{
                     borderRadius: '8px',
                     overflow: 'hidden',
-                    border: '1px solid var(--border-medium)',
-                    background: '#000000',
+                    border: '1px solid #cbd5e1',
+                    background: '#f8fafc',
                     textAlign: 'center',
                     padding: '8px',
                   }}
@@ -638,7 +374,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
               )}
 
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
                   Inspection Question / Context
                 </label>
                 <input
@@ -658,9 +394,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                 style={{ padding: '10px' }}
               >
                 {screenshotLoading ? (
-                  <>
-                    <div className="spinner" /> Analysing Visible Controls (Polling 2s)...
-                  </>
+                  <>Analysing Visible Controls...</>
                 ) : (
                   <>
                     <Play size={14} /> Request Visual Guidance
@@ -672,54 +406,57 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
             {/* Results Display */}
             <div
               style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
                 padding: '18px',
-                minHeight: '260px',
+                minHeight: '240px',
               }}
             >
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-bright)', marginBottom: '12px' }}>
-                Vision Inspection Results (No Actions Performed)
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>
+                Vision Inspection Results
               </h3>
 
               {screenshotLoading ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                  <div className="spinner" style={{ width: '28px', height: '28px', marginBottom: '12px' }} />
-                  <p style={{ fontSize: '13px' }}>Evaluating visual OCR controls with vision model...</p>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
+                  <p style={{ fontSize: '13px', fontWeight: 600 }}>Evaluating visual OCR controls with vision model...</p>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>Polling 2s intervals</span>
                 </div>
               ) : screenshotAdvice ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Observations */}
                   <div>
-                    <h4 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--brand-cyan)', textTransform: 'uppercase' }}>
+                    <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#0071ce', textTransform: 'uppercase' }}>
                       Visible UI Observations:
                     </h4>
-                    <ul style={{ paddingLeft: '16px', fontSize: '13px', color: '#e2e8f0', marginTop: '6px' }}>
+                    <ul style={{ paddingLeft: '16px', fontSize: '13px', color: '#334155', marginTop: '6px' }}>
                       {screenshotAdvice.observations.map((obs, idx) => (
                         <li key={idx} style={{ marginBottom: '4px' }}>{obs}</li>
                       ))}
                     </ul>
                   </div>
 
+                  {/* Suggested Actions */}
                   <div>
-                    <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#34d399', textTransform: 'uppercase' }}>
-                      Suggested Next Actions:
+                    <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#059669', textTransform: 'uppercase' }}>
+                      Suggested Next Steps:
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
                       {screenshotAdvice.suggested_actions.map((act, idx) => (
                         <div
                           key={idx}
                           style={{
-                            background: 'rgba(16, 185, 129, 0.08)',
-                            border: '1px solid rgba(16, 185, 129, 0.25)',
-                            padding: '8px 12px',
+                            backgroundColor: '#ecfdf5',
+                            border: '1px solid #a7f3d0',
+                            padding: '10px 12px',
                             borderRadius: '6px',
-                            fontSize: '12px',
+                            fontSize: '12.5px',
+                            color: '#065f46',
                           }}
                         >
-                          <div>{act.instruction}</div>
+                          <div><strong>Step:</strong> {act.instruction}</div>
                           {act.visible_label && (
-                            <div style={{ marginTop: '4px', color: '#6ee7b7' }}>
+                            <div style={{ marginTop: '4px', color: '#047857' }}>
                               Visible Label: <code>"{act.visible_label}"</code>
                             </div>
                           )}
@@ -728,12 +465,13 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                     </div>
                   </div>
 
+                  {/* Limitations */}
                   {screenshotAdvice.limitations.length > 0 && (
-                    <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '10px' }}>
-                      <h4 style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase' }}>
-                        Known Vision Limitations:
+                    <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
+                      <h4 style={{ fontSize: '11px', fontWeight: 700, color: '#b45309', textTransform: 'uppercase' }}>
+                        Vision Model Limitations:
                       </h4>
-                      <ul style={{ paddingLeft: '16px', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      <ul style={{ paddingLeft: '16px', fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
                         {screenshotAdvice.limitations.map((lim, idx) => (
                           <li key={idx}>{lim}</li>
                         ))}
@@ -742,8 +480,8 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                   )}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dim)', fontSize: '13px' }}>
-                  Upload a screenshot or click "Request Visual Guidance" to test AI control observation.
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px' }}>
+                  Upload a screenshot and click "Request Visual Guidance" to test AI control observation.
                 </div>
               )}
             </div>
@@ -753,23 +491,23 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
 
       {/* TAB 2: Playwright Browser Assistant */}
       {activeTab === 'browser' && (
-        <div id="tab-content-browser" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div id="tab-content-browser" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
             style={{
-              background: 'rgba(14, 165, 233, 0.08)',
-              border: '1px solid rgba(14, 165, 233, 0.25)',
-              borderRadius: 'var(--radius-md)',
+              backgroundColor: '#ebf5ff',
+              border: '1px solid #b9e1ff',
+              borderRadius: '8px',
               padding: '12px 16px',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              fontSize: '12px',
-              color: '#93c5fd',
+              fontSize: '13px',
+              color: '#0369a1',
             }}
           >
-            <Globe size={16} color="var(--brand-cyan)" style={{ flexShrink: 0 }} />
+            <Globe size={16} color="#0071ce" style={{ flexShrink: 0 }} />
             <span>
-              <strong>Sandboxed Automation (FR-07):</strong> Real Playwright browser launches an isolated context, navigates strictly to approved manufacturer technical URLs, extracts page text, and reports the verifiable action trace. Unknown source IDs are rejected.
+              <strong>Sandboxed OEM Manual Lookup (FR-07):</strong> Headless Playwright launches an isolated context, queries verified manufacturer technical portals, and logs the execution trace.
             </span>
           </div>
 
@@ -777,7 +515,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
             {/* Run Form */}
             <form onSubmit={handleRunBrowserAssistant} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
                   Approved Documentation Source ID *
                 </label>
                 <select
@@ -787,7 +525,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                   required
                 >
                   {browserSources.map((s) => (
-                    <option key={s.id} value={s.id} style={{ background: '#0b101c' }}>
+                    <option key={s.id} value={s.id}>
                       {s.title} ({s.id})
                     </option>
                   ))}
@@ -795,7 +533,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
                   Target Equipment Asset
                 </label>
                 <select
@@ -804,7 +542,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                   onChange={(e) => setBrowserAssetId(e.target.value)}
                 >
                   {assets.map((a) => (
-                    <option key={a.id} value={a.id} style={{ background: '#0b101c' }}>
+                    <option key={a.id} value={a.id}>
                       {a.name} ({a.category})
                     </option>
                   ))}
@@ -812,7 +550,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
                   Query Context / Search Prompt
                 </label>
                 <textarea
@@ -832,12 +570,10 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                 style={{ padding: '10px' }}
               >
                 {browserLoading ? (
-                  <>
-                    <div className="spinner" /> Launching Playwright Context (2s poll)...
-                  </>
+                  <>Querying OEM Manual Source...</>
                 ) : (
                   <>
-                    <Play size={14} /> Launch Sandboxed Browser Run
+                    <Play size={14} /> Launch Sandboxed Manual Lookup
                   </>
                 )}
               </button>
@@ -846,49 +582,49 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
             {/* Browser Result & Playwright Trace */}
             <div
               style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
                 padding: '18px',
-                minHeight: '260px',
+                minHeight: '240px',
               }}
             >
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-bright)', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>
                 Playwright Action Trace &amp; Page Extraction
               </h3>
 
               {browserLoading ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                  <div className="spinner" style={{ width: '28px', height: '28px', marginBottom: '12px' }} />
-                  <p style={{ fontSize: '13px' }}>Operating Chromium headless browser session...</p>
-                  <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '4px' }}>Timeout limit: 30 seconds</p>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
+                  <p style={{ fontSize: '13px', fontWeight: 600 }}>Launching isolated browser session...</p>
+                  <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Timeout limit: 30 seconds</p>
                 </div>
               ) : browserResult ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div>
-                    <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8' }}>
+                    <h4 style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a' }}>
                       {browserResult.page_title}
                     </h4>
                     <a
                       href={browserResult.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ fontSize: '11px', color: 'var(--brand-cyan)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}
+                      style={{ fontSize: '12px', color: '#0071ce', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}
                     >
-                      {browserResult.url}
+                      {browserResult.url} <ExternalLink size={12} />
                     </a>
                   </div>
 
+                  {/* Playwright Action Trace */}
                   <div>
-                    <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#64748b' }}>
                       Execution Action Trace ({browserResult.trace.length} steps):
                     </span>
                     <div
                       style={{
                         marginTop: '6px',
-                        background: '#070a12',
+                        backgroundColor: '#ffffff',
                         borderRadius: '6px',
-                        border: '1px solid var(--border-subtle)',
+                        border: '1px solid #e2e8f0',
                         padding: '10px',
                         fontFamily: 'var(--font-mono)',
                         fontSize: '11px',
@@ -899,13 +635,13 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                     >
                       {browserResult.trace.map((tr, idx) => (
                         <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#cbd5e1' }}>
-                            <span style={{ color: '#0ea5e9' }}>[{tr.action}]</span> {tr.target}
+                          <span style={{ color: '#334155' }}>
+                            <strong style={{ color: '#0071ce' }}>[{tr.action}]</strong> {tr.target}
                           </span>
                           <span
                             style={{
-                              color: tr.status === 'succeeded' ? '#34d399' : '#fb7185',
-                              fontWeight: 600,
+                              color: tr.status === 'succeeded' ? '#059669' : '#dc2626',
+                              fontWeight: 700,
                             }}
                           >
                             ✓ {tr.status}
@@ -915,28 +651,31 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                     </div>
                   </div>
 
+                  {/* Excerpt */}
                   <div
                     style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
+                      backgroundColor: '#ffffff',
                       padding: '10px 12px',
                       borderRadius: '6px',
-                      fontSize: '12px',
-                      color: '#cbd5e1',
-                      borderLeft: '3px solid var(--brand-cyan)',
+                      fontSize: '12.5px',
+                      color: '#334155',
+                      borderLeft: '3px solid #0071ce',
+                      border: '1px solid #e2e8f0',
                     }}
                   >
-                    <strong>DOM Excerpt:</strong> {browserResult.excerpt}
+                    <strong>Documentation Extract:</strong> {browserResult.excerpt}
                   </div>
 
+                  {/* AI Advice */}
                   {browserResult.advice && (
-                    <div style={{ fontSize: '12px', color: '#93c5fd', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '12.5px', color: '#0369a1', lineHeight: 1.5, backgroundColor: '#ebf5ff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #b9e1ff' }}>
                       <strong>Synthesized Advice:</strong> {browserResult.advice}
                     </div>
                   )}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dim)', fontSize: '13px' }}>
-                  Select an approved source and launch to inspect the headless browser execution trace.
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px' }}>
+                  Select an approved source and click "Launch Sandboxed Manual Lookup" to inspect execution.
                 </div>
               )}
             </div>
@@ -946,30 +685,31 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
 
       {/* TAB 3: PC Diagnostics */}
       {activeTab === 'diagnostics' && (
-        <div id="tab-content-diagnostics" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div id="tab-content-diagnostics" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div
             style={{
-              background: 'rgba(16, 185, 129, 0.08)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              borderRadius: 'var(--radius-md)',
+              backgroundColor: '#ecfdf5',
+              border: '1px solid #a7f3d0',
+              borderRadius: '8px',
               padding: '12px 16px',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              fontSize: '12px',
-              color: '#a7f3d0',
+              fontSize: '13px',
+              color: '#065f46',
             }}
           >
-            <Info size={16} color="#10b981" style={{ flexShrink: 0 }} />
+            <Info size={16} color="#059669" style={{ flexShrink: 0 }} />
             <span>
-              <strong>Read-Only Telemetry (FR-08):</strong> Imports standard system telemetry JSON. Collects only non-sensitive metrics (RAM, partition capacity, OS kernel). Redacts usernames, credentials, and hostnames. High RAM utilization alone is an observation, not a proof of hardware failure.
+              <strong>Read-Only Telemetry (FR-08):</strong> Imports standard system telemetry JSON. Collects only non-sensitive metrics (RAM, partition capacity, CPU threads). Usernames and credentials are fully redacted.
             </span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+            {/* Import / Upload */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
                   Upload Diagnostic JSON from Collector Script
                 </label>
                 <input
@@ -977,27 +717,33 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                   type="file"
                   accept=".json,application/json"
                   onChange={handleDiagnosticFileUpload}
-                  style={{ fontSize: '12px', padding: '8px' }}
+                  style={{
+                    fontSize: '12px',
+                    padding: '8px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                  }}
                 />
               </div>
 
               <div
                 style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
                   padding: '14px',
                 }}
               >
-                <h4 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-bright)', marginBottom: '8px' }}>
+                <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>
                   Collector CLI Reference
                 </h4>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                  Generate read-only telemetry safely without root privilege:
+                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                  Generate safe, read-only telemetry without root privileges:
                 </p>
                 <pre
                   style={{
-                    background: '#070a12',
+                    backgroundColor: '#0f172a',
                     padding: '8px 12px',
                     borderRadius: '6px',
                     fontFamily: 'var(--font-mono)',
@@ -1011,43 +757,44 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
               </div>
             </div>
 
+            {/* Telemetry Display */}
             <div
               style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
                 padding: '18px',
               }}
             >
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-bright)', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>
                 Structured Telemetry Metrics
               </h3>
 
               {selectedDiagnostic ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '8px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Operating System:</span>
-                    <strong style={{ color: 'var(--text-main)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                    <span style={{ color: '#64748b' }}>Operating System:</span>
+                    <strong style={{ color: '#0f172a' }}>
                       {selectedDiagnostic.os.name} {selectedDiagnostic.os.version}
                     </strong>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '8px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>CPU Cores:</span>
-                    <strong style={{ color: 'var(--text-main)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                    <span style={{ color: '#64748b' }}>CPU Cores:</span>
+                    <strong style={{ color: '#0f172a' }}>
                       {selectedDiagnostic.cpu.logical_count} Logical Threads
                     </strong>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '8px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Physical Memory:</span>
-                    <strong style={{ color: 'var(--text-main)' }}>
-                      {formatBytes(selectedDiagnostic.memory.available_bytes)} free of {formatBytes(selectedDiagnostic.memory.total_bytes)}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                    <span style={{ color: '#64748b' }}>Physical Memory:</span>
+                    <strong style={{ color: '#0f172a' }}>
+                      {formatBytes(selectedDiagnostic.memory.available_bytes)} free / {formatBytes(selectedDiagnostic.memory.total_bytes)}
                     </strong>
                   </div>
 
                   <div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
                       Mounted Disk Partitions:
                     </span>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -1055,7 +802,8 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                         <div
                           key={idx}
                           style={{
-                            background: '#070a12',
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e2e8f0',
                             padding: '8px 10px',
                             borderRadius: '6px',
                             fontSize: '11px',
@@ -1064,8 +812,8 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                             justifyContent: 'space-between',
                           }}
                         >
-                          <span style={{ color: '#cbd5e1' }}>{d.label}</span>
-                          <span style={{ color: d.free_bytes < 20 * 1024 * 1024 * 1024 ? '#fb7185' : '#34d399' }}>
+                          <span style={{ color: '#334155', fontWeight: 600 }}>{d.label}</span>
+                          <span style={{ color: d.free_bytes < 20 * 1024 * 1024 * 1024 ? '#dc2626' : '#059669', fontWeight: 700 }}>
                             {formatBytes(d.free_bytes)} free / {formatBytes(d.total_bytes)}
                           </span>
                         </div>
@@ -1073,12 +821,12 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '8px' }}>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px' }}>
                     Collected at: {formatKolkata(selectedDiagnostic.collected_at)} • Collector v{selectedDiagnostic.collector_version}
                   </div>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dim)', fontSize: '13px' }}>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px' }}>
                   No diagnostic JSON imported yet.
                 </div>
               )}

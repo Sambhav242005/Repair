@@ -9,22 +9,23 @@ import {
   CreateProductionInput,
 } from '../../types';
 import {
-  Calendar,
   Wrench,
-  GraduationCap,
+  BookOpen,
   Boxes,
   Plus,
   CheckCircle,
+  Calendar,
   AlertTriangle,
   Clock,
   User,
-  ShieldAlert,
+  Activity,
+  Layers,
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import {
   formatKolkata,
-  datetimeLocalToIso,
   getDefaultDatetimeLocal,
+  datetimeLocalToIso,
 } from '../../utils/datetime';
 
 interface FactoryDashboardProps {
@@ -41,12 +42,12 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
   onRefreshImpact,
 }) => {
   const [subTab, setSubTab] = useState<FactorySubTab>('maintenance');
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Lists
+  // Entities
   const [maintenanceList, setMaintenanceList] = useState<Maintenance[]>([]);
   const [lessonsList, setLessonsList] = useState<Lesson[]>([]);
   const [productionList, setProductionList] = useState<Production[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
 
   // Form toggles
   const [showMaintModal, setShowMaintModal] = useState<boolean>(false);
@@ -78,9 +79,17 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
   // Complete Actions
   const handleCompleteMaintenance = async (id: string) => {
     try {
-      await apiClient.completeMaintenance(id, new Date().toISOString());
+      const nowIso = new Date().toISOString();
+      const res = await apiClient.completeMaintenance(id, nowIso);
       await fetchAll();
       onRefreshImpact();
+      if (res?.next) {
+        alert(
+          `Maintenance completed! Next recurring cycle automatically scheduled for ${formatKolkata(
+            res.next.due_at
+          )}.`
+        );
+      }
     } catch (err: any) {
       onError(err);
     }
@@ -99,6 +108,7 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
     try {
       await apiClient.completeProduction(id);
       await fetchAll();
+      onRefreshImpact();
     } catch (err: any) {
       onError(err);
     }
@@ -122,20 +132,23 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '14px',
+          backgroundColor: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
           <button
             id="tab-btn-factory-maintenance"
             onClick={() => setSubTab('maintenance')}
             style={{
               padding: '8px 16px',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: 600,
+              borderRadius: '6px',
+              fontWeight: 700,
               fontSize: '13px',
-              background: subTab === 'maintenance' ? 'rgba(14, 165, 233, 0.2)' : 'transparent',
-              color: subTab === 'maintenance' ? '#38bdf8' : 'var(--text-muted)',
-              border: `1px solid ${subTab === 'maintenance' ? 'var(--brand-cyan)' : 'transparent'}`,
+              backgroundColor: subTab === 'maintenance' ? '#0071ce' : 'transparent',
+              color: subTab === 'maintenance' ? '#ffffff' : '#475569',
+              boxShadow: subTab === 'maintenance' ? '0 2px 4px rgba(0, 113, 206, 0.25)' : 'none',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
@@ -149,18 +162,18 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
             onClick={() => setSubTab('lessons')}
             style={{
               padding: '8px 16px',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: 600,
+              borderRadius: '6px',
+              fontWeight: 700,
               fontSize: '13px',
-              background: subTab === 'lessons' ? 'rgba(14, 165, 233, 0.2)' : 'transparent',
-              color: subTab === 'lessons' ? '#38bdf8' : 'var(--text-muted)',
-              border: `1px solid ${subTab === 'lessons' ? 'var(--brand-cyan)' : 'transparent'}`,
+              backgroundColor: subTab === 'lessons' ? '#0071ce' : 'transparent',
+              color: subTab === 'lessons' ? '#ffffff' : '#475569',
+              boxShadow: subTab === 'lessons' ? '0 2px 4px rgba(0, 113, 206, 0.25)' : 'none',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
             }}
           >
-            <GraduationCap size={15} /> Training Lessons ({lessonsList.length})
+            <BookOpen size={15} /> Training Lessons ({lessonsList.length})
           </button>
 
           <button
@@ -168,52 +181,53 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
             onClick={() => setSubTab('production')}
             style={{
               padding: '8px 16px',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: 600,
+              borderRadius: '6px',
+              fontWeight: 700,
               fontSize: '13px',
-              background: subTab === 'production' ? 'rgba(14, 165, 233, 0.2)' : 'transparent',
-              color: subTab === 'production' ? '#38bdf8' : 'var(--text-muted)',
-              border: `1px solid ${subTab === 'production' ? 'var(--brand-cyan)' : 'transparent'}`,
+              backgroundColor: subTab === 'production' ? '#0071ce' : 'transparent',
+              color: subTab === 'production' ? '#ffffff' : '#475569',
+              boxShadow: subTab === 'production' ? '0 2px 4px rgba(0, 113, 206, 0.25)' : 'none',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
             }}
           >
-            <Boxes size={15} /> Production Runs ({productionList.length})
+            <Boxes size={15} /> Production ({productionList.length})
           </button>
         </div>
 
+        {/* Action Button for Current Subtab */}
         <div>
           {subTab === 'maintenance' && (
             <button
-              id="btn-open-add-maintenance"
+              id="btn-open-maint-modal"
               onClick={() => setShowMaintModal(true)}
               className="btn-primary"
-              style={{ fontSize: '13px', padding: '8px 16px' }}
+              style={{ padding: '9px 16px', fontSize: '13px' }}
             >
-              <Plus size={15} /> Schedule Maintenance Task
+              <Plus size={16} /> Schedule Maintenance Task
             </button>
           )}
 
           {subTab === 'lessons' && (
             <button
-              id="btn-open-add-lesson"
+              id="btn-open-lesson-modal"
               onClick={() => setShowLessonModal(true)}
               className="btn-primary"
-              style={{ fontSize: '13px', padding: '8px 16px' }}
+              style={{ padding: '9px 16px', fontSize: '13px' }}
             >
-              <Plus size={15} /> Schedule Training Lesson
+              <Plus size={16} /> Schedule Training Lesson
             </button>
           )}
 
           {subTab === 'production' && (
             <button
-              id="btn-open-add-production"
+              id="btn-open-prod-modal"
               onClick={() => setShowProdModal(true)}
               className="btn-primary"
-              style={{ fontSize: '13px', padding: '8px 16px' }}
+              style={{ padding: '9px 16px', fontSize: '13px' }}
             >
-              <Plus size={15} /> Schedule Production Run
+              <Plus size={16} /> Schedule Production Run
             </button>
           )}
         </div>
@@ -221,24 +235,24 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
 
       {/* SUB-TAB 1: Maintenance Schedule List */}
       {subTab === 'maintenance' && (
-        <div id="factory-maintenance-list" className="card" style={{ padding: '24px' }}>
+        <div id="factory-maintenance-list" className="card" style={{ padding: '24px', backgroundColor: '#ffffff', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-bright)' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
                 Equipment Preventive Maintenance Schedule
               </h2>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                FR-09: Completing recurring task writes history and calculates next due date = completed_at + interval_days.
+              <p style={{ fontSize: '13px', color: '#64748b' }}>
+                FR-09: Recurring maintenance calculates next due date = completed_at + interval_days.
               </p>
             </div>
-            <span style={{ fontSize: '12px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '12px', color: '#64748b', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
               Asia/Kolkata (IST)
             </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {maintenanceList.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dim)' }}>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
                 No maintenance tasks scheduled. Click "+ Schedule Maintenance Task" above.
               </div>
             ) : (
@@ -249,41 +263,44 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
                     key={m.id}
                     id={`maint-item-${m.id}`}
                     style={{
-                      backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                      border: `1px solid ${isCompleted ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}`,
-                      borderRadius: 'var(--radius-md)',
-                      padding: '16px',
+                      backgroundColor: isCompleted ? '#f0fdf4' : '#ffffff',
+                      border: `1px solid ${isCompleted ? '#bbf7d0' : '#e2e8f0'}`,
+                      borderLeft: `4px solid ${isCompleted ? '#10b981' : '#f59e0b'}`,
+                      borderRadius: '8px',
+                      padding: '16px 20px',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <strong style={{ fontSize: '15px', color: 'var(--text-bright)' }}>{m.title}</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                          <strong style={{ fontSize: '15px', color: '#0f172a' }}>{m.title}</strong>
                           <span
                             style={{
                               fontSize: '11px',
-                              fontWeight: 700,
+                              fontWeight: 800,
                               textTransform: 'uppercase',
                               padding: '2px 8px',
                               borderRadius: '4px',
-                              background: isCompleted ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                              color: isCompleted ? '#34d399' : '#fbbf24',
+                              background: isCompleted ? '#dcfce7' : '#fef3c7',
+                              color: isCompleted ? '#15803d' : '#b45309',
+                              border: `1px solid ${isCompleted ? '#bbf7d0' : '#fde68a'}`,
                             }}
                           >
                             {m.status}
                           </span>
                           {m.interval_days && (
-                            <span style={{ fontSize: '11px', color: 'var(--brand-cyan)', fontFamily: 'var(--font-mono)' }}>
+                            <span style={{ fontSize: '11px', color: '#0071ce', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                               ↻ Every {m.interval_days} Days
                             </span>
                           )}
                         </div>
 
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px', lineHeight: 1.5 }}>
+                        <p style={{ fontSize: '13.5px', color: '#334155', marginBottom: '10px', lineHeight: 1.5 }}>
                           {m.description}
                         </p>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: '#64748b', flexWrap: 'wrap' }}>
                           <span>
                             <strong>Asset:</strong> {getAssetName(m.asset_id)}
                           </span>
@@ -299,7 +316,7 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
                             </span>
                           )}
                           {isCompleted && (
-                            <span style={{ color: '#34d399' }}>
+                            <span style={{ color: '#15803d', fontWeight: 600 }}>
                               Completed at: {formatKolkata(m.completed_at)}
                             </span>
                           )}
@@ -312,12 +329,12 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
                             id={`btn-complete-maint-${m.id}`}
                             onClick={() => handleCompleteMaintenance(m.id)}
                             className="btn-secondary"
-                            style={{ fontSize: '12px', padding: '6px 14px' }}
+                            style={{ fontSize: '12px', padding: '7px 14px', backgroundColor: '#ffffff' }}
                           >
                             <CheckCircle size={14} color="#10b981" /> Complete Task
                           </button>
                         ) : (
-                          <span style={{ fontSize: '12px', color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '12px', color: '#15803d', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
                             <CheckCircle size={14} /> Completed
                           </span>
                         )}
@@ -333,24 +350,24 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
 
       {/* SUB-TAB 2: Training Lessons Schedule List */}
       {subTab === 'lessons' && (
-        <div id="factory-lessons-list" className="card" style={{ padding: '24px' }}>
+        <div id="factory-lessons-list" className="card" style={{ padding: '24px', backgroundColor: '#ffffff', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-bright)' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
                 Workforce Technical Training Lessons
               </h2>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              <p style={{ fontSize: '13px', color: '#64748b' }}>
                 FR-10: Training lessons reserve equipment only when <code>blocks_asset = true</code>.
               </p>
             </div>
-            <span style={{ fontSize: '12px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '12px', color: '#64748b', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
               Asia/Kolkata (IST)
             </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {lessonsList.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dim)' }}>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
                 No training lessons scheduled. Click "+ Schedule Training Lesson" above.
               </div>
             ) : (
@@ -361,25 +378,28 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
                     key={l.id}
                     id={`lesson-item-${l.id}`}
                     style={{
-                      backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                      border: `1px solid ${isCompleted ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}`,
-                      borderRadius: 'var(--radius-md)',
-                      padding: '16px',
+                      backgroundColor: isCompleted ? '#f0fdf4' : '#ffffff',
+                      border: `1px solid ${isCompleted ? '#bbf7d0' : '#e2e8f0'}`,
+                      borderLeft: `4px solid ${isCompleted ? '#10b981' : '#8b5cf6'}`,
+                      borderRadius: '8px',
+                      padding: '16px 20px',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <strong style={{ fontSize: '15px', color: 'var(--text-bright)' }}>{l.title}</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                          <strong style={{ fontSize: '15px', color: '#0f172a' }}>{l.title}</strong>
                           <span
                             style={{
                               fontSize: '11px',
-                              fontWeight: 700,
+                              fontWeight: 800,
                               textTransform: 'uppercase',
                               padding: '2px 8px',
                               borderRadius: '4px',
-                              background: isCompleted ? 'rgba(16, 185, 129, 0.2)' : 'rgba(139, 92, 246, 0.2)',
-                              color: isCompleted ? '#34d399' : '#c084fc',
+                              background: isCompleted ? '#dcfce7' : '#f3e8ff',
+                              color: isCompleted ? '#15803d' : '#7e22ce',
+                              border: `1px solid ${isCompleted ? '#bbf7d0' : '#e9d5ff'}`,
                             }}
                           >
                             {l.status}
@@ -388,12 +408,12 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
                             <span
                               style={{
                                 fontSize: '11px',
-                                fontWeight: 700,
+                                fontWeight: 800,
                                 padding: '2px 8px',
                                 borderRadius: '4px',
-                                background: 'rgba(244, 63, 94, 0.15)',
-                                color: '#fb7185',
-                                border: '1px solid rgba(244, 63, 94, 0.3)',
+                                background: '#fef2f2',
+                                color: '#b91c1c',
+                                border: '1px solid #fecaca',
                               }}
                             >
                               Locks Equipment
@@ -401,11 +421,11 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
                           )}
                         </div>
 
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px', lineHeight: 1.5 }}>
+                        <p style={{ fontSize: '13.5px', color: '#334155', marginBottom: '10px', lineHeight: 1.5 }}>
                           {l.instructions}
                         </p>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'var(--text-dim)', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: '#64748b', flexWrap: 'wrap' }}>
                           <span>
                             <strong>Target Asset:</strong> {getAssetName(l.asset_id)}
                           </span>
@@ -424,12 +444,12 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
                             id={`btn-complete-lesson-${l.id}`}
                             onClick={() => handleCompleteLesson(l.id)}
                             className="btn-secondary"
-                            style={{ fontSize: '12px', padding: '6px 14px' }}
+                            style={{ fontSize: '12px', padding: '7px 14px', backgroundColor: '#ffffff' }}
                           >
                             <CheckCircle size={14} color="#10b981" /> Complete Lesson
                           </button>
                         ) : (
-                          <span style={{ fontSize: '12px', color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '12px', color: '#15803d', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
                             <CheckCircle size={14} /> Completed
                           </span>
                         )}
@@ -445,24 +465,24 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
 
       {/* SUB-TAB 3: Production Schedule List */}
       {subTab === 'production' && (
-        <div id="factory-production-list" className="card" style={{ padding: '24px' }}>
+        <div id="factory-production-list" className="card" style={{ padding: '24px', backgroundColor: '#ffffff', borderRadius: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-bright)' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
                 Production Batches &amp; Machine Reservation
               </h2>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              <p style={{ fontSize: '13px', color: '#64748b' }}>
                 FR-11: Rejects overlaps with scheduled maintenance, production, or blocking training. Rejects non-operational equipment.
               </p>
             </div>
-            <span style={{ fontSize: '12px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: '12px', color: '#64748b', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
               Asia/Kolkata (IST)
             </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {productionList.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dim)' }}>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
                 No production jobs scheduled. Click "+ Schedule Production Run" above.
               </div>
             ) : (
@@ -473,35 +493,38 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
                     key={p.id}
                     id={`prod-item-${p.id}`}
                     style={{
-                      backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                      border: `1px solid ${isCompleted ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}`,
-                      borderRadius: 'var(--radius-md)',
-                      padding: '16px',
+                      backgroundColor: isCompleted ? '#f0fdf4' : '#ffffff',
+                      border: `1px solid ${isCompleted ? '#bbf7d0' : '#e2e8f0'}`,
+                      borderLeft: `4px solid ${isCompleted ? '#10b981' : '#0071ce'}`,
+                      borderRadius: '8px',
+                      padding: '16px 20px',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <strong style={{ fontSize: '15px', color: 'var(--text-bright)' }}>{p.title}</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                          <strong style={{ fontSize: '15px', color: '#0f172a' }}>{p.title}</strong>
                           <span
                             style={{
                               fontSize: '11px',
-                              fontWeight: 700,
+                              fontWeight: 800,
                               textTransform: 'uppercase',
                               padding: '2px 8px',
                               borderRadius: '4px',
-                              background: isCompleted ? 'rgba(16, 185, 129, 0.2)' : 'rgba(14, 165, 233, 0.2)',
-                              color: isCompleted ? '#34d399' : '#38bdf8',
+                              background: isCompleted ? '#dcfce7' : '#ebf5ff',
+                              color: isCompleted ? '#15803d' : '#0071ce',
+                              border: `1px solid ${isCompleted ? '#bbf7d0' : '#b9e1ff'}`,
                             }}
                           >
                             {p.status}
                           </span>
-                          <span style={{ fontSize: '12px', color: '#fbbf24', fontWeight: 600 }}>
+                          <span style={{ fontSize: '12px', color: '#b45309', fontWeight: 700, backgroundColor: '#fef3c7', padding: '2px 8px', borderRadius: '4px' }}>
                             Target Output: {p.quantity} Units
                           </span>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'var(--text-dim)', flexWrap: 'wrap', marginTop: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: '#64748b', flexWrap: 'wrap', marginTop: '8px' }}>
                           <span>
                             <strong>Asset:</strong> {getAssetName(p.asset_id)}
                           </span>
@@ -517,12 +540,12 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
                             id={`btn-complete-prod-${p.id}`}
                             onClick={() => handleCompleteProduction(p.id)}
                             className="btn-secondary"
-                            style={{ fontSize: '12px', padding: '6px 14px' }}
+                            style={{ fontSize: '12px', padding: '7px 14px', backgroundColor: '#ffffff' }}
                           >
                             <CheckCircle size={14} color="#10b981" /> Complete Batch
                           </button>
                         ) : (
-                          <span style={{ fontSize: '12px', color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '12px', color: '#15803d', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
                             <CheckCircle size={14} /> Completed
                           </span>
                         )}
@@ -625,7 +648,7 @@ const MaintenanceModal: React.FC<{
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
         backdropFilter: 'blur(4px)',
         zIndex: 1000,
         display: 'flex',
@@ -635,19 +658,30 @@ const MaintenanceModal: React.FC<{
       }}
       onClick={onClose}
     >
-      <div className="card" style={{ width: '100%', maxWidth: '520px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '14px' }}>
+      <div
+        className="card"
+        style={{
+          width: '100%',
+          maxWidth: '520px',
+          padding: '28px',
+          backgroundColor: '#ffffff',
+          borderRadius: '12px',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '14px' }}>
           Schedule Maintenance Task
         </h3>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Target Asset *
             </label>
             <select id="input-maint-asset" value={assetId} onChange={(e) => setAssetId(e.target.value)} required>
               {assets.map((a) => (
-                <option key={a.id} value={a.id} style={{ background: '#0b101c' }}>
+                <option key={a.id} value={a.id}>
                   {a.name} ({a.category})
                 </option>
               ))}
@@ -655,7 +689,7 @@ const MaintenanceModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Task Title *
             </label>
             <input
@@ -669,7 +703,7 @@ const MaintenanceModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Description &amp; Procedure *
             </label>
             <textarea
@@ -684,7 +718,7 @@ const MaintenanceModal: React.FC<{
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
                 Assignee *
               </label>
               <input
@@ -698,7 +732,7 @@ const MaintenanceModal: React.FC<{
             </div>
 
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
                 Recurrence Interval (Days)
               </label>
               <input
@@ -713,7 +747,7 @@ const MaintenanceModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Due Timestamp (Asia/Kolkata) *
             </label>
             <input
@@ -726,7 +760,7 @@ const MaintenanceModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', color: '#334155' }}>
               <input
                 type="checkbox"
                 checked={hasWindow}
@@ -740,7 +774,7 @@ const MaintenanceModal: React.FC<{
           {hasWindow && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
                   Starts At *
                 </label>
                 <input
@@ -753,7 +787,7 @@ const MaintenanceModal: React.FC<{
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
                   Ends At *
                 </label>
                 <input
@@ -827,7 +861,7 @@ const LessonModal: React.FC<{
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
         backdropFilter: 'blur(4px)',
         zIndex: 1000,
         display: 'flex',
@@ -837,14 +871,25 @@ const LessonModal: React.FC<{
       }}
       onClick={onClose}
     >
-      <div className="card" style={{ width: '100%', maxWidth: '520px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '14px' }}>
+      <div
+        className="card"
+        style={{
+          width: '100%',
+          maxWidth: '520px',
+          padding: '28px',
+          backgroundColor: '#ffffff',
+          borderRadius: '12px',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '14px' }}>
           Schedule Training Lesson
         </h3>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Lesson Title *
             </label>
             <input
@@ -858,7 +903,7 @@ const LessonModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Training Instructions / Syllabus *
             </label>
             <textarea
@@ -872,7 +917,7 @@ const LessonModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Trainee / Instructor *
             </label>
             <input
@@ -886,13 +931,13 @@ const LessonModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Associated Equipment (Optional)
             </label>
             <select id="input-lesson-asset" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
-              <option value="" style={{ background: '#0b101c' }}>-- None (Classroom Lecture) --</option>
+              <option value="">-- None (Classroom Lecture) --</option>
               {assets.map((a) => (
-                <option key={a.id} value={a.id} style={{ background: '#0b101c' }}>
+                <option key={a.id} value={a.id}>
                   {a.name} ({a.category})
                 </option>
               ))}
@@ -900,7 +945,7 @@ const LessonModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', color: '#334155' }}>
               <input
                 type="checkbox"
                 checked={blocksAsset}
@@ -913,7 +958,7 @@ const LessonModal: React.FC<{
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
                 Starts At (Asia/Kolkata) *
               </label>
               <input
@@ -926,7 +971,7 @@ const LessonModal: React.FC<{
             </div>
 
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
                 Ends At (Asia/Kolkata) *
               </label>
               <input
@@ -990,7 +1035,7 @@ const ProductionModal: React.FC<{
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
         backdropFilter: 'blur(4px)',
         zIndex: 1000,
         display: 'flex',
@@ -1000,19 +1045,30 @@ const ProductionModal: React.FC<{
       }}
       onClick={onClose}
     >
-      <div className="card" style={{ width: '100%', maxWidth: '520px', padding: '24px' }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '14px' }}>
+      <div
+        className="card"
+        style={{
+          width: '100%',
+          maxWidth: '520px',
+          padding: '28px',
+          backgroundColor: '#ffffff',
+          borderRadius: '12px',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '14px' }}>
           Schedule Production Run
         </h3>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Target Machine *
             </label>
             <select id="input-prod-asset" value={assetId} onChange={(e) => setAssetId(e.target.value)} required>
               {assets.map((a) => (
-                <option key={a.id} value={a.id} style={{ background: '#0b101c' }}>
+                <option key={a.id} value={a.id}>
                   {a.name} ({a.category}) — [{a.status}]
                 </option>
               ))}
@@ -1020,7 +1076,7 @@ const ProductionModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Production Batch Title *
             </label>
             <input
@@ -1034,7 +1090,7 @@ const ProductionModal: React.FC<{
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
               Target Quantity (Units) *
             </label>
             <input
@@ -1050,7 +1106,7 @@ const ProductionModal: React.FC<{
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
                 Starts At (Asia/Kolkata) *
               </label>
               <input
@@ -1063,7 +1119,7 @@ const ProductionModal: React.FC<{
             </div>
 
             <div>
-              <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
                 Ends At (Asia/Kolkata) *
               </label>
               <input

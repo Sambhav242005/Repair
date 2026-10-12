@@ -10,6 +10,7 @@ import { ImpactCards } from './features/impact/ImpactCards';
 import { AssetList } from './features/assets/AssetList';
 import { RepairCaseForm } from './features/repair/RepairCaseForm';
 import { CaseView } from './features/repair/CaseView';
+import { CollegeRepairsBanner } from './features/repair/CollegeRepairsBanner';
 import { ComputerAssistancePanel } from './features/computer-assistance/ComputerAssistancePanel';
 import { FactoryDashboard } from './features/factory/FactoryDashboard';
 
@@ -124,11 +125,16 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSelectCollegeRepair = (caseId: string, assetId: string) => {
+    setSelectedAssetId(assetId);
+    setSelectedCaseId(caseId);
+  };
+
   const currentCase = cases.find((c) => c.id === selectedCaseId) || null;
-  const currentAsset = assets.find((a) => a.id === selectedAssetId) || null;
+  const currentAsset = assets.find((a) => a.id === (currentCase?.asset_id || selectedAssetId)) || null;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-page)' }}>
       {/* 1. Mandatory Sample Data Banner */}
       <SampleDataBanner
         apiMode={apiMode}
@@ -157,12 +163,18 @@ export const App: React.FC = () => {
           onDismiss={() => setGlobalError(null)}
         />
 
-        {/* Impact Cards (Always prominent on both views) */}
+        {/* Impact Cards (Right to Repair circularity metrics) */}
         <ImpactCards impact={impact} loading={loading} />
 
         {/* TAB 1: REPAIR GUIDANCE & CASES */}
         {activeTab === 'repair' && (
           <div id="repair-tab-layout" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* iFixit College Repairs Feature Showcase Banner */}
+            <CollegeRepairsBanner
+              onSelectRepair={handleSelectCollegeRepair}
+              selectedCaseId={selectedCaseId}
+            />
+
             {/* Desktop side-by-side, mobile stacked */}
             <div
               style={{
@@ -201,14 +213,23 @@ export const App: React.FC = () => {
                 />
 
                 {/* Case Selector / History Panel */}
-                <div className="card" id="cases-history-panel" style={{ padding: '20px' }}>
+                <div
+                  className="card"
+                  id="cases-history-panel"
+                  style={{
+                    padding: '20px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-bright)' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
                       Active &amp; Historical Cases ({cases.length})
                     </h3>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '340px', overflowY: 'auto' }}>
                     {cases.map((c) => {
                       const isSelected = c.id === selectedCaseId;
                       const a = assets.find((item) => item.id === c.asset_id);
@@ -216,38 +237,45 @@ export const App: React.FC = () => {
                         <div
                           key={c.id}
                           id={`case-item-${c.id}`}
-                          onClick={() => setSelectedCaseId(c.id)}
+                          onClick={() => {
+                            setSelectedCaseId(c.id);
+                            if (c.asset_id) setSelectedAssetId(c.asset_id);
+                          }}
                           style={{
-                            padding: '10px 14px',
-                            borderRadius: 'var(--radius-md)',
-                            backgroundColor: isSelected ? 'rgba(14, 165, 233, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                            border: `1px solid ${isSelected ? 'var(--brand-cyan)' : 'var(--border-subtle)'}`,
+                            padding: '12px 14px',
+                            borderRadius: '8px',
+                            backgroundColor: isSelected ? '#f0f9ff' : '#ffffff',
+                            border: `2px solid ${isSelected ? '#0071ce' : '#e2e8f0'}`,
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
+                            boxShadow: isSelected ? '0 2px 6px rgba(0, 113, 206, 0.15)' : 'none',
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: 'var(--brand-cyan)' }}>
+                            <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#0071ce' }}>
                               {c.id}
                             </span>
                             <span
                               style={{
                                 fontSize: '11px',
                                 textTransform: 'uppercase',
-                                fontWeight: 700,
-                                color: c.status === 'ready' ? '#34d399' : c.status === 'closed' ? '#94a3b8' : '#fbbf24',
+                                fontWeight: 800,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                backgroundColor: c.status === 'ready' ? '#ecfdf5' : c.status === 'closed' ? '#f1f5f9' : '#fffbeb',
+                                color: c.status === 'ready' ? '#059669' : c.status === 'closed' ? '#64748b' : '#d97706',
                               }}
                             >
                               {c.outcome ? `● ${c.outcome}` : c.status}
                             </span>
                           </div>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-bright)', marginTop: '4px' }}>
+                          <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>
                             {a?.name || c.asset_id}
                           </div>
                           <p
                             style={{
                               fontSize: '12px',
-                              color: 'var(--text-muted)',
+                              color: '#64748b',
                               marginTop: '2px',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -307,24 +335,24 @@ export const App: React.FC = () => {
         onToggleSound={() => setSoundEnabled((prev) => !prev)}
       />
 
-      {/* Footer */}
+      {/* iFixit Clean Light Footer */}
       <footer
         style={{
-          padding: '20px 24px',
-          borderTop: '1px solid var(--border-subtle)',
-          backgroundColor: 'rgba(7, 10, 18, 0.9)',
-          fontSize: '12px',
-          color: 'var(--text-dim)',
+          padding: '24px',
+          borderTop: '1px solid #e2e8f0',
+          backgroundColor: '#ffffff',
+          fontSize: '12.5px',
+          color: '#64748b',
           textAlign: 'center',
           marginTop: '40px',
         }}
       >
         <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <span>
-            Repair Before Replace • Architecture Target: 5-Hour Modular MVP • Timezone: Asia/Kolkata (IST)
+            Repair Before Replace • Inspired by <strong>iFixit Master Repair Manuals</strong> &amp; Right to Repair
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)' }}>
-            API: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}
+          <span style={{ fontFamily: 'var(--font-mono)', color: '#0071ce', fontWeight: 600 }}>
+            API Endpoint: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}
           </span>
         </div>
       </footer>

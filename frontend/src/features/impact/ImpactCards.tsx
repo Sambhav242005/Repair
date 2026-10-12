@@ -1,6 +1,6 @@
 import React from 'react';
 import { ImpactSummary } from '../../types';
-import { ShieldCheck, Scale, AlertCircle, Info, Award } from 'lucide-react';
+import { ShieldCheck, Scale, Info } from 'lucide-react';
 
 interface ImpactCardsProps {
   impact: ImpactSummary | null;
