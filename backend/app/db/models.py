@@ -112,6 +112,15 @@ class ProductionModel(Base):
 
     asset = relationship("AssetModel", back_populates="production_runs")
 
+class CoursePlanModel(Base):
+    __tablename__ = "course_plans"
+    id = Column(String, primary_key=True)
+    fingerprint = Column(String, nullable=False, unique=True)
+    title = Column(String, nullable=False)
+    payload_json = Column(Text, nullable=False)
+    status = Column(String, nullable=False, default="draft")
+    created_at = Column(String, nullable=False, default=utc_now_iso)
+
 class AlertModel(Base):
     __tablename__ = "alerts"
 

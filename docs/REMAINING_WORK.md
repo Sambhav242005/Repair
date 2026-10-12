@@ -31,3 +31,27 @@ Updated 2026-10-12. Sambhav owns the remaining acceptance work. Teammate integra
 ## Owner and handoff
 
 **Owner: Sambhav.** The files `01_Sambhav_AI_Desktop.md` and `04_Factory_Automation_QA.md` retain implementation detail and historical team assignments. This file is the one current checklist; it does not assign work to unnamed teammates.
+
+## Syllabus planner and companion — 2026-10-12
+
+- [x] Replace iFixit branding with software/equipment troubleshooting language.
+- [x] Upload text PDF, DOCX, TXT, Markdown or CSV; read text locally and allow manual editing.
+- [x] AI topic organization with exact source excerpts and editable lecture/preparation estimates.
+- [x] Semester dates, weekly timetable slots, reviewed holiday dates, capacity warning and deterministic lecture allocation.
+- [x] Save reviewed plans atomically as class sessions; detect identical plans, reject teacher conflicts and avoid duplicate publication.
+- [x] Topic/preparation reminders in the existing alert bell with 15-minute, one-hour or one-day lead times.
+- [x] Separate paired Windows companion with loopback-only listener, exact website origin, rotating pairing code, Host validation and action audit.
+- [x] Current-user installed-app discovery, four approved app launches, named read-only diagnostic checks, and paired Clef/Gemma native-session endpoints.
+- [x] Setup guide and launch script: [Teaching and companion setup](TEACHING_AND_COMPANION.md).
+- [x] [Mac teammate setup](MAC_TEAMMATE_SETUP.md), shell launcher, Apple model adapter, application list, approved Mac app launches and diagnostic support.
+- [ ] Run the Mac companion on a physical Mac and record the acceptance checklist in the setup guide; Mac adapter tests here use mocks.
+- [x] Live website test: sample syllabus/holiday upload, Ollama source-backed outline, and six-month preview (8 lectures, 25 usable slots, holiday excluded). Sample plan remains a draft; no sample classes were published.
+- [x] Live companion pairing, Dell G3 3579 model detection, 113 Start-menu apps, formatted system report, Calculator launch request, and supported native-window discovery.
+- [ ] Ship and sign an installer with a tray UI; current companion is source-run.
+- [ ] Validate the actual hosted HTTPS website and its browser local-network permission flow; localhost pairing is verified.
+- [ ] Add OCR/image and legacy document support; current scan-only PDFs return a clear OCR/paste-text instruction.
+- [ ] Add calendar import for non-ISO holiday dates and existing timetable documents; currently weekly slots are entered manually.
+- [ ] Add email/phone or background OS notifications if required; current reminders are workspace alerts while the backend runs.
+- [ ] Add reviewed general-terminal command proposals if needed; current companion runs named diagnostic checks only.
+
+Historical verification above describes the earlier integration pass. Latest verification: **80 backend tests passed**, **18 frontend tests passed**, and the frontend TypeScript/Vite build passed. One existing Starlette status-constant deprecation warning remains.

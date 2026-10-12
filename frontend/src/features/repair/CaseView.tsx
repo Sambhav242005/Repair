@@ -170,7 +170,7 @@ export const CaseView: React.FC<CaseViewProps> = ({
           letterSpacing: '0.04em',
         }}
       >
-        <span>iFixit Repair Manual</span>
+        <span>Software & equipment support</span>
         <ChevronRight size={12} color="#94a3b8" />
         <span>{asset?.category || 'Hardware'}</span>
         <ChevronRight size={12} color="#94a3b8" />
@@ -249,7 +249,7 @@ export const CaseView: React.FC<CaseViewProps> = ({
             ) : (
               <>
                 <Wrench size={18} />
-                <span>Generate iFixit Repair Guide</span>
+                <span>Generate troubleshooting guidance</span>
               </>
             )}
           </button>

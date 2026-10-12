@@ -298,7 +298,7 @@ export const App: React.FC = () => {
         {activeTab === 'factory' && (
           <div className="teacher-content">
           <section className="teacher-welcome compact-welcome">
-            <div><p className="eyebrow">TEACHING &amp; LAB PLANNING</p><h1>Plan classes around your equipment</h1><p>Schedule lessons, preventive care, and shared equipment time in one place.</p></div>
+            <div><p className="eyebrow">TEACHING &amp; LAB PLANNING</p><h1>Turn your syllabus into a teaching plan</h1><p>Plan each lecture around your timetable, holidays, and syllabus deadline.</p></div>
           </section>
           <FactoryDashboard
             assets={assets}

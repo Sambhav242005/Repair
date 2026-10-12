@@ -19,6 +19,12 @@ class CollectorImportTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "usable manufacturer and model"):
             parse_device_identity('{"manufacturer":"Default string","model":"System Product Name"}')
 
+    def test_mac_device_identity_queries_only_the_hardware_model(self):
+        with patch("scripts.collect_diagnostics.platform.system", return_value="Darwin"), patch(
+                "scripts.collect_diagnostics.subprocess.run", return_value=SimpleNamespace(stdout="Mac14,7\n")) as run:
+            self.assertEqual(detect_device_identity(), {"manufacturer":"Apple","model":"Mac14,7"})
+            self.assertEqual(run.call_args.args[0], ["/usr/sbin/sysctl", "-n", "hw.model"])
+
     @unittest.skipUnless(os.name == "nt", "Local model detection uses Windows CIM.")
     def test_device_detection_requests_make_and_model_without_serial(self):
         with patch("scripts.collect_diagnostics.subprocess.run", return_value=SimpleNamespace(

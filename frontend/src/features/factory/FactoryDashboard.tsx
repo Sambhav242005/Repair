@@ -22,6 +22,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { SyllabusPlanner } from '../teaching/SyllabusPlanner';
 import {
   formatKolkata,
   getDefaultDatetimeLocal,
@@ -118,6 +119,7 @@ export const FactoryDashboard: React.FC<FactoryDashboardProps> = ({
 
   return (
     <div id="factory-dashboard-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <SyllabusPlanner onPublished={fetchAll} />
       {/* Factory Sub-Navigation & Quick Action */}
       <div
         className="card"

@@ -526,6 +526,39 @@ input::placeholder, textarea::placeholder {
 .diagnostic-triage-result strong { color: #34493a; font-size: 12px; }
 .diagnostic-triage-result p { margin: 5px 0; font-size: 11px; line-height: 1.55; }
 .diagnostic-triage-result small { color: #7a857c; font-size: 10px; }
+.syllabus-planner { padding: 24px; border: 1px solid #dce5d8; background: #fff; border-radius: 14px; display: grid; gap: 20px; }
+.syllabus-planner header p { margin-top: 8px; color: #526256; line-height: 1.6; }
+.syllabus-planner h2 { font-size: 22px; color: #203b32; }
+.planner-step { min-width: 0; display: grid; gap: 16px; border: 1px solid #dce5d8; padding: 20px; border-radius: 12px; }
+.planner-step legend { padding: 0 8px; font-weight: 700; color: #245b48; }
+.planner-step label, .local-companion-panel label { display: grid; gap: 6px; color: #38473c; font-size: 14px; font-weight: 600; }
+.planner-step input, .planner-step textarea, .planner-step select, .local-companion-panel input, .local-companion-panel select { font-size: 16px; min-height: 44px; }
+.planner-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+.planner-slot { display: grid; grid-template-columns: 2fr 1.5fr 1fr auto; align-items: end; gap: 12px; }
+.planner-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.planner-step button, .planner-preview button, .local-companion-panel button { min-height: 44px; padding: 10px 16px; font-size: 14px; justify-self: start; }
+.planner-topics { display: grid; gap: 12px; }
+.planner-topics article { display: grid; grid-template-columns: 24px minmax(120px,1fr) 90px auto; gap: 12px; align-items: end; padding: 16px; border: 1px solid #e4e7dd; border-radius: 10px; background: #fafbf7; }
+.topic-preparation { grid-column: 2 / -1; }
+.topic-source { grid-column: 2 / -1; color: #526256; overflow-wrap: anywhere; }
+.topic-index { font-weight: 700; align-self: center; color: #245b48; }
+.planner-topics button { grid-column: 4; grid-row: 1; }
+.planner-error { padding: 12px; border-left: 4px solid #b45309; background: #fff7ed; color: #7c2d12; border-radius: 8px; }
+.planner-notice { padding: 12px; background: #edf4ef; color: #245b48; border-radius: 8px; }
+.planner-preview { display: grid; gap: 14px; }
+.planner-table { max-height: 450px; overflow: auto; border: 1px solid #dce5d8; border-radius: 10px; }
+.planner-table table { border-collapse: collapse; width: 100%; min-width: 420px; }
+.planner-table th, .planner-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e4e7dd; vertical-align: top; font-size: 14px; }
+.planner-table th { background: #edf4ef; position: sticky; top: 0; }
+.planner-table td p { margin-top: 5px; white-space: pre-line; color: #526256; }
+.planner-saved button { margin: 8px 8px 0 0; }
+.local-companion-panel { margin: 16px 20px; padding: 16px; border: 1px solid #dce5d8; border-radius: 10px; background: #fafbf7; }
+.local-companion-panel summary { font-weight: 700; color: #245b48; cursor: pointer; }
+.local-companion-panel p, .local-companion-panel h3 { margin-block: 12px; }
+.local-companion-panel form { display: grid; grid-template-columns: minmax(160px,1fr) auto; gap: 12px; align-items: end; max-width: 650px; }
+.companion-app-list { columns: 2; padding: 16px 24px; max-height: 250px; overflow: auto; font-size: 14px; }
+.companion-report { padding: 12px; border-radius: 8px; background: #edf4ef; }
+@media (max-width: 700px) { .syllabus-planner { padding: 16px; } .planner-step { padding: 14px; } .planner-grid, .planner-slot, .local-companion-panel form { grid-template-columns: 1fr; } .planner-topics article { grid-template-columns: 20px minmax(0,1fr) 75px; } .planner-topics button { grid-column: 2; grid-row: auto; } .topic-preparation, .topic-source { grid-column: 2 / -1; } }
 .diagnostic-list { display: flex; flex-direction: column; gap: 8px; }
 .diagnostic-list article { display: grid; grid-template-columns: minmax(160px, 1fr) auto auto auto; align-items: center; gap: 14px; padding: 12px; border: 1px solid #e6e8df; border-radius: 10px; background: #fff; color: #5a685d; font-size: 10px; }
 .diagnostic-list strong, .diagnostic-list small { display: block; }

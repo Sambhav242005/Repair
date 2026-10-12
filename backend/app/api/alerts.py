@@ -1,4 +1,5 @@
 import uuid
+import json
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
@@ -7,6 +8,7 @@ from backend.app.core.exceptions import NotFoundException
 from backend.app.db.database import begin_write_transaction, get_db
 from backend.app.db.models import (
     AlertModel,
+    CoursePlanModel,
     LessonModel,
     MaintenanceModel,
     ProductionModel,
@@ -98,6 +100,11 @@ def evaluate_and_persist_alerts(db: Session, now: Optional[datetime] = None):
     # due: starts_at until ends_at
     # overdue: after ends_at
     lessons = db.query(LessonModel).filter(LessonModel.status == "scheduled").all()
+    reminder_times = {}
+    for plan in db.query(CoursePlanModel).filter_by(status="published").all():
+        data = json.loads(plan.payload_json)
+        for lesson_id in data.get("lesson_ids", []):
+            reminder_times[lesson_id] = data["config"].get("reminder_minutes", 15)
     for l in lessons:
         try:
             s_at = parse_iso(l.starts_at)
@@ -109,18 +116,18 @@ def evaluate_and_persist_alerts(db: Session, now: Optional[datetime] = None):
         severity = "info"
         msg = ""
 
-        if s_at - timedelta(minutes=15) <= now_dt < s_at:
+        if s_at - timedelta(minutes=reminder_times.get(l.id, 15)) <= now_dt < s_at:
             kind = "due_soon"
             severity = "info"
-            msg = f"Training lesson '{l.title}' starts soon ({l.starts_at})."
+            msg = f"Prepare to teach '{l.title}' at {l.starts_at}. {l.instructions[:350]}"
         elif s_at <= now_dt < e_at:
             kind = "due"
             severity = "warning"
-            msg = f"Training lesson '{l.title}' is currently running."
+            msg = f"Teach now: '{l.title}'. {l.instructions[:350]}"
         elif now_dt >= e_at:
             kind = "overdue"
             severity = "critical"
-            msg = f"Training lesson '{l.title}' was scheduled to end at {l.ends_at} but is not marked completed."
+            msg = f"Class '{l.title}' ended at {l.ends_at}. Mark it complete to record syllabus progress."
 
         if kind:
             existing = (

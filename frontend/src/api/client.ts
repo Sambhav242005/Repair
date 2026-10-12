@@ -29,6 +29,7 @@ import {
   PaginatedResponse,
 } from '../types';
 import { mockEngine } from './mockEngine';
+import { companionConnection } from './companionClient';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\/$/, '');
 
@@ -88,6 +89,9 @@ class ApiClient {
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    if (endpoint.startsWith('/desktop-sessions') && companionConnection.connected) {
+      return companionConnection.request<T>('/api/v1' + endpoint, options);
+    }
     if (this.mode === 'live') {
       try {
         const url = `${API_BASE_URL}${endpoint}`;
@@ -312,6 +316,32 @@ class ApiClient {
   public async detectLocalDevice(): Promise<LocalDeviceCandidate> {
     if (this.mode !== 'live') throw new Error('Switch to Live data to detect this PC.');
     return this.request<LocalDeviceCandidate>('/assets/local-device');
+  }
+
+  public async readTeachingDocument(file: File): Promise<{text: string; fingerprint: string; holiday_dates: string[]}> {
+    if (this.mode !== 'live') throw new Error('Switch to Live data to upload documents.');
+    const body = new FormData(); body.append('file', file);
+    return this.request('/teaching/documents', {method:'POST', body});
+  }
+
+  public async organizeSyllabus(text: string): Promise<{topics: {title: string; lectures: number; preparation: string; source_excerpt: string}[]}> {
+    if (this.mode !== 'live') throw new Error('Switch to Live data to organize your syllabus.');
+    return this.request('/teaching/outline', {method:'POST', body:JSON.stringify({text})});
+  }
+
+  public async getTeachingPlans(): Promise<any[]> {
+    if (this.mode !== 'live') return [];
+    return this.request('/teaching/plans');
+  }
+
+  public async previewTeachingPlan(config: object): Promise<any> {
+    if (this.mode !== 'live') throw new Error('Switch to Live data to save a teaching plan.');
+    return this.request('/teaching/plans', {method:'POST', body:JSON.stringify(config)});
+  }
+
+  public async publishTeachingPlan(id: string): Promise<any> {
+    if (this.mode !== 'live') throw new Error('Switch to Live data to save classes.');
+    return this.request(`/teaching/plans/${id}/publish`, {method:'POST'});
   }
 
   public async updateAsset(id: string, input: UpdateAssetInput): Promise<Asset> {

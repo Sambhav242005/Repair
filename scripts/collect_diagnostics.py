@@ -25,10 +25,17 @@ def parse_device_identity(output: str) -> dict:
     return {"manufacturer": manufacturer, "model": model}
 
 def detect_device_identity(runner=None) -> dict:
-    """Read local Win32_ComputerSystem make/model without collecting serial or user identity."""
-    if os.name != "nt":
-        raise RuntimeError("This PC can only be detected by the local Windows backend.")
+    """Read Windows make/model or the Mac hardware model without serial or user identity."""
     run = runner or subprocess.run
+    if platform.system() == "Darwin":
+        try:
+            result = run(["/usr/sbin/sysctl", "-n", "hw.model"], capture_output=True,
+                         text=True, encoding="utf-8", timeout=8, check=True)
+            return parse_device_identity(json.dumps({"manufacturer": "Apple", "model": result.stdout.strip()}))
+        except (OSError, subprocess.SubprocessError):
+            raise RuntimeError("macOS could not read the hardware model.") from None
+    if os.name != "nt":
+        raise RuntimeError("Device model detection requires a local Windows or macOS backend.")
     script = (
         "$ErrorActionPreference='Stop'; "
         "$pc=Get-CimInstance -ClassName Win32_ComputerSystem; "

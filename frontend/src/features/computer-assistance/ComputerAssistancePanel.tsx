@@ -5,6 +5,7 @@ import { apiClient } from '../../api/client';
 import { pollJob } from '../../api/polling';
 import { formatBytes, formatKolkata } from '../../utils/datetime';
 import { buildDesktopActivity, describeProposedAction, hasDesktopSessionError } from './desktopActivity';
+import { LocalCompanionPanel } from './LocalCompanionPanel';
 
 interface Props {
   assets: Asset[];
@@ -195,6 +196,7 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
         </div>
       </div>
 
+      <LocalCompanionPanel onConnectionChange={() => {setSession(null);setWindowKey('');void refreshWindows();}} />
       {tab === 'desktop' && <div className="support-body">
         <div className="support-explainer"><ShieldCheck size={18} /><p><strong>Native computer use.</strong> Clef reviews the current app and proposes one bounded action. Nothing is typed or clicked until you review the proposal and approve it.</p></div>
         {!liveMode ? <div className="support-empty"><Computer size={26} /><h3>Connect the local backend to use a computer</h3><p>Switch to Live data above. Native input is unavailable in sample mode.</p></div> : <div className="desktop-grid">
@@ -270,7 +272,7 @@ export const ComputerAssistancePanel: React.FC<Props> = ({ assets, selectedAsset
       </div>}
 
       {tab === 'diagnostics' && <div className="support-body">
-        <div className="support-explainer"><FileText size={18} /><p><strong>Read-only PC report.</strong> Collect basic system facts from this Windows PC and save them to its matching equipment record. Nothing is changed. Clef can recommend one safe next check from a report; it cannot run commands or repair the PC.</p></div>
+        <div className="support-explainer"><FileText size={18} /><p><strong>Read-only computer report.</strong> Collect basic system facts from this Windows or Mac laptop and save them to its matching equipment record. Nothing is changed. Clef can recommend one safe next check from a report; it cannot run commands or repair the computer.</p></div>
         <div className="diagnostic-toolbar">
           <label>Equipment record<select value={diagnosticAssetId} onChange={(event) => {
             const id = event.target.value;

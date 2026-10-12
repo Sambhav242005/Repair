@@ -15,6 +15,7 @@ from backend.app.db.seed import seed_database
 from backend.app.jobs.registry import JobRegistry
 
 from backend.app.api.health import router as health_router
+from backend.app.api.teaching import router as teaching_router
 from backend.app.api.assets import router as assets_router
 from backend.app.api.cases import router as cases_router
 from backend.app.api.uploads import router as uploads_router
@@ -125,6 +126,7 @@ app.include_router(health_router)
 API_V1_PREFIX = "/api/v1"
 app.include_router(health_router, prefix=API_V1_PREFIX)
 app.include_router(assets_router, prefix=API_V1_PREFIX)
+app.include_router(teaching_router, prefix=API_V1_PREFIX)
 app.include_router(uploads_router, prefix=API_V1_PREFIX)
 app.include_router(diagnostics_router, prefix=API_V1_PREFIX)
 app.include_router(cases_router, prefix=API_V1_PREFIX)
@@ -137,4 +139,4 @@ app.include_router(desktop_router, prefix=API_V1_PREFIX)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("backend.app.main:app", host="127.0.0.1", port=8000)

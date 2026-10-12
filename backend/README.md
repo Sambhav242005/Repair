@@ -19,11 +19,13 @@ cp backend/.env.example backend/.env
 
 ### 3. Run Development Server
 ```bash
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 - OpenAPI Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 - Interactive ReDoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 - Health Check: [http://localhost:8000/health](http://localhost:8000/health)
+
+On Windows, run without `--reload`: native UI Automation and Clef use subprocesses, which require the Proactor event loop. See [teaching planner and companion setup](../docs/TEACHING_AND_COMPANION.md).
 
 ### 4. Run Automated Smoke Tests
 ```bash
