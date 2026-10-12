@@ -22,6 +22,8 @@ import {
   CreateProductionInput,
   UploadScreenshotResponse,
   CreateDiagnosticInput,
+  DesktopAppId,
+  DesktopSession,
 } from '../types';
 import {
   INITIAL_ASSETS,
@@ -47,13 +49,16 @@ interface StoredState {
   browserSources: BrowserSource[];
   jobs: Record<string, Job>;
   screenshots: Record<string, { id: string; url: string; mime_type: string; size_bytes: number }>;
+  desktopSessions: Record<string, DesktopSession>;
 }
 
 function loadState(): StoredState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (!parsed.desktopSessions) parsed.desktopSessions = {};
+      return parsed;
     }
   } catch (e) {
     console.warn('Failed to load local storage state:', e);
@@ -81,6 +86,7 @@ function getInitialState(): StoredState {
     browserSources: [...INITIAL_BROWSER_SOURCES],
     jobs: {},
     screenshots: {},
+    desktopSessions: {},
   };
 }
 
@@ -724,6 +730,116 @@ export class MockEngine {
       methodology:
         'Calculated strictly as sum of known mass for unique assets with confirmed repaired outcome (excluding retired units). Missing mass assets contribute zero rather than invented figures.',
     };
+  }
+
+  public startDesktopSession(appId: DesktopAppId, goal: string): DesktopSession {
+    const id = `session_${Date.now()}`;
+    const titles: Record<DesktopAppId, string> = {
+      calculator: 'Windows Calculator (calc.exe)',
+      settings: 'Windows Settings (ms-settings:storage)',
+      taskmgr: 'Task Manager (taskmgr.exe)',
+    };
+
+    const session: DesktopSession = {
+      id,
+      app_id: appId,
+      app_title: titles[appId] || 'Desktop Window',
+      goal,
+      status: 'running',
+      started_at: new Date().toISOString(),
+      stopped_at: null,
+      steps: [],
+      verified_result: null,
+      error: null,
+    };
+    this.state.desktopSessions[id] = session;
+    saveState(this.state);
+
+    if (appId === 'calculator') {
+      const actions = [
+        { control_name: 'num4Button', control_type: 'Button', action: 'invoke' as const, value: '4', verified: 'Display text updated to "4"' },
+        { control_name: 'num2Button', control_type: 'Button', action: 'invoke' as const, value: '2', verified: 'Display text updated to "42"' },
+        { control_name: 'plusButton', control_type: 'Button', action: 'invoke' as const, value: '+', verified: 'Operator display shows "+"' },
+        { control_name: 'num5Button', control_type: 'Button', action: 'invoke' as const, value: '5', verified: 'Display text updated to "5"' },
+        { control_name: 'num8Button', control_type: 'Button', action: 'invoke' as const, value: '8', verified: 'Display text updated to "58"' },
+        { control_name: 'equalButton', control_type: 'Button', action: 'invoke' as const, value: '=', verified: 'Display text reads "100"' },
+      ];
+
+      actions.forEach((a, i) => {
+        setTimeout(() => {
+          const current = this.state.desktopSessions[id];
+          if (current && current.status === 'running') {
+            current.steps.push({
+              step_number: i + 1,
+              timestamp: new Date().toISOString(),
+              control_name: a.control_name,
+              control_type: a.control_type,
+              action: a.action,
+              value: a.value,
+              verified_state: a.verified,
+              status: 'succeeded',
+            });
+            if (i === actions.length - 1) {
+              current.status = 'completed';
+              current.verified_result = 'Calculation 42 + 58 = 100 independently verified on Calculator output display.';
+            }
+            saveState(this.state);
+          }
+        }, (i + 1) * 700);
+      });
+    } else {
+      setTimeout(() => {
+        const current = this.state.desktopSessions[id];
+        if (current && current.status === 'running') {
+          current.steps.push({
+            step_number: 1,
+            timestamp: new Date().toISOString(),
+            control_name: 'SystemStorageOverview',
+            control_type: 'Pane',
+            action: 'focus',
+            value: null,
+            verified_state: 'Focused System Storage status view without elevated privileges',
+            status: 'succeeded',
+          });
+          current.status = 'completed';
+          current.verified_result = 'Read-only diagnostic metrics observed safely.';
+          saveState(this.state);
+        }
+      }, 1000);
+    }
+
+    return session;
+  }
+
+  public stopDesktopSession(sessionId: string): DesktopSession {
+    const session = this.state.desktopSessions[sessionId];
+    if (!session) {
+      throw { error: { code: 'NOT_FOUND', message: `Desktop session ${sessionId} not found` } };
+    }
+    if (session.status === 'running') {
+      session.status = 'stopped';
+      session.stopped_at = new Date().toISOString();
+      session.steps.push({
+        step_number: session.steps.length + 1,
+        timestamp: new Date().toISOString(),
+        control_name: 'UserStopSignal',
+        control_type: 'Signal',
+        action: 'verify',
+        value: null,
+        verified_state: 'Emergency Stop triggered by user: further input aborted immediately.',
+        status: 'stopped',
+      });
+      saveState(this.state);
+    }
+    return session;
+  }
+
+  public getDesktopSession(sessionId: string): DesktopSession {
+    const session = this.state.desktopSessions[sessionId];
+    if (!session) {
+      throw { error: { code: 'NOT_FOUND', message: `Desktop session ${sessionId} not found` } };
+    }
+    return session;
   }
 
   private checkWindowConflicts(assetId: string, s: number, e: number) {

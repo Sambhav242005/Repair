@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Asset,
   BrowserSource,
   BrowserResult,
   ScreenshotAdvice,
   Diagnostic,
+  DesktopAppId,
+  DesktopSession,
 } from '../../types';
 import {
   Monitor,
   Globe,
   HardDrive,
-  Upload,
   Play,
+  Square,
   Terminal,
   CheckCircle2,
-  XCircle,
   AlertTriangle,
   Info,
+  Shield,
   Layers,
+  Sparkles,
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { pollJob } from '../../api/polling';
@@ -29,14 +32,23 @@ interface ComputerAssistancePanelProps {
   onError: (error: any) => void;
 }
 
-type PanelTab = 'screenshot' | 'browser' | 'diagnostics';
+type PanelTab = 'screenshot' | 'browser' | 'diagnostics' | 'desktop';
 
 export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = ({
   assets,
   selectedAssetId,
   onError,
 }) => {
-  const [activeTab, setActiveTab] = useState<PanelTab>('screenshot');
+  const [activeTab, setActiveTab] = useState<PanelTab>('desktop');
+
+  // --- Desktop assistant state ---
+  const [selectedAppId, setSelectedAppId] = useState<DesktopAppId>('calculator');
+  const [desktopGoal, setDesktopGoal] = useState<string>(
+    'Execute 42 + 58 addition and verify result display is 100'
+  );
+  const [desktopSession, setDesktopSession] = useState<DesktopSession | null>(null);
+  const [desktopLoading, setDesktopLoading] = useState<boolean>(false);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // --- Screenshot guidance state ---
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
@@ -58,7 +70,6 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
   const [browserLoading, setBrowserLoading] = useState<boolean>(false);
 
   // --- Diagnostics state ---
-  const [diagnosticsList, setDiagnosticsList] = useState<Diagnostic[]>([]);
   const [selectedDiagnostic, setSelectedDiagnostic] = useState<Diagnostic | null>(null);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState<boolean>(false);
 
@@ -69,7 +80,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
     }
   }, [selectedAssetId]);
 
-  // Load browser sources & diagnostics
+  // Load browser sources
   useEffect(() => {
     apiClient
       .getBrowserSources()
@@ -81,21 +92,65 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
       })
       .catch((err) => console.warn('Failed to load browser sources:', err));
 
-    // Load initial diagnostics from mock/api
-    if (browserAssetId) {
-      // In mock engine, diag_1 exists
-      setSelectedDiagnostic({
-        id: 'diag_1',
-        asset_id: 'asset_laptop_1',
-        collected_at: '2026-10-12T08:30:00Z',
-        os: { name: 'Ubuntu GNU/Linux', version: '24.04 LTS (x86_64)' },
-        memory: { total_bytes: 16777216000, available_bytes: 1887436800 },
-        disks: [{ label: '/ (NVMe Root)', total_bytes: 512110190592, free_bytes: 17179869184 }],
-        cpu: { logical_count: 8 },
-        collector_version: '1.0.0-cli-safe',
-      });
+    // Initial diagnostic preview
+    setSelectedDiagnostic({
+      id: 'diag_1',
+      asset_id: 'asset_laptop_1',
+      collected_at: '2026-10-12T08:30:00Z',
+      os: { name: 'Ubuntu GNU/Linux', version: '24.04 LTS (x86_64)' },
+      memory: { total_bytes: 16777216000, available_bytes: 1887436800 },
+      disks: [{ label: '/ (NVMe Root)', total_bytes: 512110190592, free_bytes: 17179869184 }],
+      cpu: { logical_count: 8 },
+      collector_version: '1.0.0-cli-safe',
+    });
+  }, []);
+
+  // Poll desktop session while running
+  useEffect(() => {
+    if (desktopSession && desktopSession.status === 'running') {
+      pollTimerRef.current = setInterval(async () => {
+        try {
+          const fresh = await apiClient.getDesktopSession(desktopSession.id);
+          setDesktopSession(fresh);
+          if (fresh.status !== 'running') {
+            if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+            setDesktopLoading(false);
+          }
+        } catch {
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          setDesktopLoading(false);
+        }
+      }, 500);
     }
-  }, [browserAssetId]);
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, [desktopSession?.id, desktopSession?.status]);
+
+  // Handler: Start Desktop Session
+  const handleStartDesktopSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDesktopLoading(true);
+    try {
+      const session = await apiClient.startDesktopSession(selectedAppId, desktopGoal);
+      setDesktopSession(session);
+    } catch (err: any) {
+      onError(err);
+      setDesktopLoading(false);
+    }
+  };
+
+  // Handler: Stop Desktop Session
+  const handleStopDesktopSession = async () => {
+    if (!desktopSession) return;
+    try {
+      const stopped = await apiClient.stopDesktopSession(desktopSession.id);
+      setDesktopSession(stopped);
+      setDesktopLoading(false);
+    } catch (err: any) {
+      onError(err);
+    }
+  };
 
   // Handler: Screenshot upload & advice
   const handleScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,8 +165,9 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
   const handleRunScreenshotAdvice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!screenshotFile && !screenshotPreview) {
-      // Create a dummy canvas snapshot if none selected to demonstrate immediately
-      setScreenshotPreview('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" fill="%231e293b"><rect width="400" height="250"/><text x="50" y="50" fill="%23fff" font-size="16">System Storage Settings</text><rect x="50" y="80" width="300" height="25" fill="%23f43f5e"/><text x="60" y="98" fill="%23fff" font-size="12">C: Drive - 96% Full (16 GB Free)</text><rect x="50" y="130" width="160" height="30" rx="4" fill="%230ea5e9"/><text x="65" y="150" fill="%23fff" font-size="12">Clean up system files</text></svg>');
+      setScreenshotPreview(
+        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" fill="%231e293b"><rect width="400" height="250"/><text x="50" y="50" fill="%23fff" font-size="16">System Storage Settings</text><rect x="50" y="80" width="300" height="25" fill="%23f43f5e"/><text x="60" y="98" fill="%23fff" font-size="12">C: Drive - 96% Full (16 GB Free)</text><rect x="50" y="130" width="160" height="30" rx="4" fill="%230ea5e9"/><text x="65" y="150" fill="%23fff" font-size="12">Clean up system files</text></svg>'
+      );
     }
 
     setScreenshotLoading(true);
@@ -196,11 +252,11 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Terminal size={20} color="var(--brand-cyan)" />
             <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-bright)' }}>
-              Computer Assistance &amp; Diagnostics Panel
+              Computer &amp; Desktop Assistance Panel
             </h2>
           </div>
           <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Multi-modal investigation: screenshot vision, sandboxed Playwright browser navigation, and host telemetry.
+            Multi-modal investigation: Native Windows UI Automation, Screenshot vision, sandboxed Playwright, and host telemetry.
           </p>
         </div>
 
@@ -212,8 +268,28 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
             padding: '4px',
             borderRadius: 'var(--radius-md)',
             border: '1px solid var(--border-subtle)',
+            flexWrap: 'wrap',
+            gap: '4px',
           }}
         >
+          <button
+            id="tab-btn-desktop"
+            onClick={() => setActiveTab('desktop')}
+            style={{
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: 700,
+              borderRadius: '6px',
+              background: activeTab === 'desktop' ? 'var(--brand-cyan)' : 'transparent',
+              color: activeTab === 'desktop' ? '#ffffff' : 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Shield size={14} /> Native Desktop Assistant
+          </button>
+
           <button
             id="tab-btn-screenshot"
             onClick={() => setActiveTab('screenshot')}
@@ -247,7 +323,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
               gap: '6px',
             }}
           >
-            <Globe size={14} /> Browser Assistant
+            <Globe size={14} /> Browser Docs
           </button>
 
           <button
@@ -269,6 +345,240 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
           </button>
         </div>
       </div>
+
+      {/* TAB: Native Desktop Assistant (Clef + UI Automation) */}
+      {activeTab === 'desktop' && (
+        <div id="tab-content-desktop" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div
+            style={{
+              background: 'rgba(14, 165, 233, 0.08)',
+              border: '1px solid rgba(14, 165, 233, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              padding: '14px 18px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              fontSize: '12px',
+              color: '#bae6fd',
+            }}
+          >
+            <Shield size={18} color="var(--brand-cyan)" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <strong style={{ color: '#ffffff' }}>Native Windows Computer Use (Clef Architecture):</strong>{' '}
+              Operates exclusively via Windows UI Automation on explicitly targeted application windows. Bounded candidate controls only; Stop control immediately aborts execution. Displays independently verified UI states rather than unverified model assertions.
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+            {/* Control Form */}
+            <form onSubmit={handleStartDesktopSession} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                  Target Application Window *
+                </label>
+                <select
+                  id="select-desktop-app"
+                  value={selectedAppId}
+                  onChange={(e) => setSelectedAppId(e.target.value as DesktopAppId)}
+                  disabled={desktopSession?.status === 'running'}
+                  required
+                >
+                  <option value="calculator" style={{ background: '#0b101c' }}>
+                    Windows Calculator (calc.exe) — Proof: Key Input &amp; Display State
+                  </option>
+                  <option value="settings" style={{ background: '#0b101c' }}>
+                    Windows Settings (ms-settings:storage) — Storage Inspection
+                  </option>
+                  <option value="taskmgr" style={{ background: '#0b101c' }}>
+                    Task Manager (taskmgr.exe) — Memory Headroom Observer
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
+                  Desktop Automation Goal / Instructions *
+                </label>
+                <textarea
+                  id="textarea-desktop-goal"
+                  rows={3}
+                  required
+                  value={desktopGoal}
+                  onChange={(e) => setDesktopGoal(e.target.value)}
+                  disabled={desktopSession?.status === 'running'}
+                  placeholder="e.g. Execute 42 + 58 addition and verify result display is 100"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  id="btn-start-desktop-session"
+                  type="submit"
+                  disabled={desktopSession?.status === 'running'}
+                  className="btn-primary"
+                  style={{ flex: 1, padding: '10px' }}
+                >
+                  {desktopSession?.status === 'running' ? (
+                    <>
+                      <div className="spinner" /> Executing Action Steps...
+                    </>
+                  ) : (
+                    <>
+                      <Play size={14} /> Start Desktop Automation
+                    </>
+                  )}
+                </button>
+
+                {desktopSession?.status === 'running' && (
+                  <button
+                    id="btn-stop-desktop-session"
+                    type="button"
+                    onClick={handleStopDesktopSession}
+                    className="btn-danger"
+                    style={{ padding: '10px 18px' }}
+                    title="Abort desktop execution immediately"
+                  >
+                    <Square size={14} fill="#fb7185" /> STOP
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {/* Live Action Trace & Verification State */}
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-subtle)',
+                padding: '18px',
+                minHeight: '260px',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-bright)' }}>
+                  Observable Desktop Action Trace
+                </h3>
+                {desktopSession && (
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      background:
+                        desktopSession.status === 'completed'
+                          ? 'rgba(16, 185, 129, 0.2)'
+                          : desktopSession.status === 'running'
+                          ? 'rgba(14, 165, 233, 0.2)'
+                          : 'rgba(244, 63, 94, 0.2)',
+                      color:
+                        desktopSession.status === 'completed'
+                          ? '#34d399'
+                          : desktopSession.status === 'running'
+                          ? '#38bdf8'
+                          : '#fb7185',
+                    }}
+                  >
+                    Status: {desktopSession.status}
+                  </span>
+                )}
+              </div>
+
+              {desktopSession ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+                  {/* Verified Result Banner */}
+                  {desktopSession.verified_result && (
+                    <div
+                      style={{
+                        padding: '10px 14px',
+                        background: 'rgba(16, 185, 129, 0.12)',
+                        border: '1px solid rgba(16, 185, 129, 0.35)',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        color: '#34d399',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <CheckCircle2 size={16} />
+                      <strong>Verified Display:</strong> {desktopSession.verified_result}
+                    </div>
+                  )}
+
+                  {desktopSession.status === 'stopped' && (
+                    <div
+                      style={{
+                        padding: '10px 14px',
+                        background: 'rgba(244, 63, 94, 0.12)',
+                        border: '1px solid rgba(244, 63, 94, 0.35)',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        color: '#fb7185',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <AlertTriangle size={16} />
+                      <strong>Session Aborted:</strong> User stop command interrupted subsequent actions immediately.
+                    </div>
+                  )}
+
+                  {/* Sequential Action Trace */}
+                  <div
+                    style={{
+                      flex: 1,
+                      background: '#070a12',
+                      borderRadius: '6px',
+                      padding: '10px',
+                      border: '1px solid var(--border-subtle)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '11px',
+                      overflowY: 'auto',
+                      maxHeight: '220px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                    }}
+                  >
+                    {desktopSession.steps.length === 0 ? (
+                      <span style={{ color: 'var(--text-dim)' }}>Connecting to UI Automation framework...</span>
+                    ) : (
+                      desktopSession.steps.map((st) => (
+                        <div
+                          key={st.step_number}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            padding: '4px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(255, 255, 255, 0.02)',
+                          }}
+                        >
+                          <span style={{ color: '#cbd5e1' }}>
+                            <strong style={{ color: '#0ea5e9' }}>#{st.step_number}</strong> [{st.control_name} ({st.control_type})] -&gt; {st.action}({st.value || ''})
+                          </span>
+                          <span style={{ color: st.status === 'succeeded' ? '#34d399' : '#fb7185' }}>
+                            {st.verified_state}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-dim)', fontSize: '13px' }}>
+                  Select an application and goal above, then click "Start Desktop Automation" to observe real-time UI Automation execution and verify the Stop control.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: Screenshot Guidance */}
       {activeTab === 'screenshot' && (
@@ -370,7 +680,7 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
               }}
             >
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-bright)', marginBottom: '12px' }}>
-                Vision Inspection Results
+                Vision Inspection Results (No Actions Performed)
               </h3>
 
               {screenshotLoading ? (
@@ -380,7 +690,6 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                 </div>
               ) : screenshotAdvice ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {/* Observations */}
                   <div>
                     <h4 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--brand-cyan)', textTransform: 'uppercase' }}>
                       Visible UI Observations:
@@ -392,7 +701,6 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                     </ul>
                   </div>
 
-                  {/* Suggested Actions */}
                   <div>
                     <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#34d399', textTransform: 'uppercase' }}>
                       Suggested Next Actions:
@@ -420,7 +728,6 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                     </div>
                   </div>
 
-                  {/* Limitations */}
                   {screenshotAdvice.limitations.length > 0 && (
                     <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '10px' }}>
                       <h4 style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b', textTransform: 'uppercase' }}>
@@ -572,7 +879,6 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                     </a>
                   </div>
 
-                  {/* Playwright Action Trace */}
                   <div>
                     <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
                       Execution Action Trace ({browserResult.trace.length} steps):
@@ -609,7 +915,6 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                     </div>
                   </div>
 
-                  {/* Excerpt */}
                   <div
                     style={{
                       background: 'rgba(255, 255, 255, 0.03)',
@@ -623,7 +928,6 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
                     <strong>DOM Excerpt:</strong> {browserResult.excerpt}
                   </div>
 
-                  {/* AI Advice */}
                   {browserResult.advice && (
                     <div style={{ fontSize: '12px', color: '#93c5fd', lineHeight: 1.5 }}>
                       <strong>Synthesized Advice:</strong> {browserResult.advice}
@@ -663,7 +967,6 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-            {/* Import / Upload */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
@@ -708,7 +1011,6 @@ export const ComputerAssistancePanel: React.FC<ComputerAssistancePanelProps> = (
               </div>
             </div>
 
-            {/* Telemetry Display */}
             <div
               style={{
                 background: 'rgba(255, 255, 255, 0.02)',

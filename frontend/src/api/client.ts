@@ -22,6 +22,8 @@ import {
   CreateDiagnosticInput,
   ApiErrorResponse,
   PaginatedResponse,
+  DesktopAppId,
+  DesktopSession,
 } from '../types';
 import { mockEngine } from './mockEngine';
 
@@ -105,19 +107,23 @@ class ApiClient {
         if (!response.ok) {
           const errData: ApiErrorResponse = data.error
             ? data
-            : { error: { code: 'HTTP_ERROR', message: data.detail || 'Request failed' } };
+            : { error: { code: data.code || 'HTTP_ERROR', message: data.message || data.detail || `Request failed with status ${response.status}`, details: data.details || null } };
           throw errData;
         }
 
         return data as T;
       } catch (err: any) {
-        // If error has code, rethrow; otherwise if network error, consider mock fallback
         if (err?.error?.code) {
           throw err;
         }
-        console.warn(`Backend request failed (${endpoint}), falling back to mock fixtures:`, err);
-        this.mode = 'mock';
-        this.notifyListeners();
+        // Requirement: Do NOT automatically replay failed live requests against mock data!
+        throw {
+          error: {
+            code: 'NETWORK_ERROR',
+            message: `Live backend request to ${endpoint} failed. FastAPI server may be disconnected or unreachable at ${API_BASE_URL}.`,
+            details: { endpoint, error: String(err) },
+          },
+        };
       }
     }
 
@@ -275,6 +281,20 @@ class ApiClient {
       return Promise.resolve(mockEngine.getImpact() as any);
     }
 
+    // /desktop-sessions
+    if (endpoint === '/desktop-sessions' && method === 'POST') {
+      const body = JSON.parse(options.body as string);
+      return Promise.resolve(mockEngine.startDesktopSession(body.app_id, body.goal) as any);
+    }
+    if (endpoint.match(/^\/desktop-sessions\/[^/]+\/stop$/) && method === 'POST') {
+      const match = endpoint.match(/^\/desktop-sessions\/([^/]+)\/stop$/)!;
+      return Promise.resolve(mockEngine.stopDesktopSession(match[1]) as any);
+    }
+    if (endpoint.startsWith('/desktop-sessions/') && method === 'GET') {
+      const id = endpoint.replace('/desktop-sessions/', '');
+      return Promise.resolve(mockEngine.getDesktopSession(id) as any);
+    }
+
     return Promise.reject({ error: { code: 'NOT_FOUND', message: `Endpoint ${endpoint} not handled` } });
   }
 
@@ -395,9 +415,10 @@ class ApiClient {
   }
 
   public async completeMaintenance(id: string, completedAt?: string): Promise<CompleteMaintenanceResult> {
+    const timestamp = completedAt || new Date().toISOString();
     return this.request<CompleteMaintenanceResult>(`/maintenance/${id}/complete`, {
       method: 'POST',
-      body: JSON.stringify(completedAt ? { completed_at: completedAt } : {}),
+      body: JSON.stringify({ completed_at: timestamp }),
     });
   }
 
@@ -454,6 +475,24 @@ class ApiClient {
 
   public async getImpact(): Promise<ImpactSummary> {
     return this.request<ImpactSummary>('/impact');
+  }
+
+  public async startDesktopSession(appId: DesktopAppId, goal: string): Promise<DesktopSession> {
+    return this.request<DesktopSession>('/desktop-sessions', {
+      method: 'POST',
+      body: JSON.stringify({ app_id: appId, goal }),
+    });
+  }
+
+  public async stopDesktopSession(sessionId: string): Promise<DesktopSession> {
+    return this.request<DesktopSession>(`/desktop-sessions/${sessionId}/stop`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  public async getDesktopSession(sessionId: string): Promise<DesktopSession> {
+    return this.request<DesktopSession>(`/desktop-sessions/${sessionId}`);
   }
 
   public resetDemoData() {
