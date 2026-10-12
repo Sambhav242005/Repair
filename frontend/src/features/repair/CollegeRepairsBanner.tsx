@@ -9,7 +9,7 @@ import {
   ChevronRight,
   ExternalLink,
   BookOpen,
-  Sparkles,
+  GraduationCap,
 } from 'lucide-react';
 
 interface CollegeRepairsBannerProps {
@@ -27,9 +27,9 @@ export const CollegeRepairsBanner: React.FC<CollegeRepairsBannerProps> = ({
       assetId: 'asset_laptop_1',
       icon: <Laptop size={22} color="#0071ce" />,
       number: '1',
-      title: 'Laptop Cooling Fan & Battery Overhaul',
-      tagline: 'Fix screaming fans & thermal throttling in class',
-      tools: 'iFixit Precision Bits, Thermal Compound, ESD Spudger',
+      title: 'SVVV Lab Laptop Cooling Fan & Battery Overhaul',
+      tagline: 'Fix roaring fans & thermal throttling during campus lectures & lab code runs',
+      tools: 'iFixit Precision Bits, Arctic MX-4, ESD Spudger',
       savings: 'Saves ₹65,000 • 1.65 kg Hardware Retained',
       difficulty: 'Moderate • 25 Mins',
     },
@@ -38,8 +38,8 @@ export const CollegeRepairsBanner: React.FC<CollegeRepairsBannerProps> = ({
       assetId: 'asset_phone_1',
       icon: <Smartphone size={22} color="#0071ce" />,
       number: '2',
-      title: 'Phone Screen & Battery Replacement',
-      tagline: 'Repair shattered glass & 68% battery degradation',
+      title: 'Student Smartphone Screen & Battery Swap',
+      tagline: 'Repair shattered Gorilla glass & 68% battery degradation from dorm drops',
       tools: 'iOpener Heat Mat, Suction Handle, P2 Pentalobe',
       savings: 'Saves ₹25,000 • 0.18 kg Hardware Retained',
       difficulty: 'Moderate • 30 Mins',
@@ -49,8 +49,8 @@ export const CollegeRepairsBanner: React.FC<CollegeRepairsBannerProps> = ({
       assetId: 'asset_headphones_1',
       icon: <Headphones size={22} color="#0071ce" />,
       number: '3',
-      title: 'Headphone Cable & USB-C Port Reconditioning',
-      tagline: 'Extract pocket lint & splice broken strain-relief wires',
+      title: 'Lab Audio, Multimeter & USB-C Cable Reconditioning',
+      tagline: 'Extract compacted pocket lint from charging ports & splice broken signal wires',
       tools: 'Non-conductive Probe, Multimeter, Solder Sleeve',
       savings: 'Saves ₹15,000 • 0.25 kg Hardware Retained',
       difficulty: 'Easy • 15 Mins',
@@ -80,14 +80,14 @@ export const CollegeRepairsBanner: React.FC<CollegeRepairsBannerProps> = ({
           marginBottom: '12px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span
             style={{
               backgroundColor: '#ebf5ff',
               color: '#0071ce',
               fontSize: '11px',
               fontWeight: 800,
-              letterSpacing: '0.06em',
+              letterSpacing: '0.05em',
               textTransform: 'uppercase',
               padding: '3px 10px',
               borderRadius: '9999px',
@@ -97,10 +97,10 @@ export const CollegeRepairsBanner: React.FC<CollegeRepairsBannerProps> = ({
               gap: '5px',
             }}
           >
-            <BookOpen size={12} /> iFixit News &amp; Master Guides
+            <GraduationCap size={13} /> SVVV Student &amp; Lab Initiative
           </span>
           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-            Right to Repair Initiative
+            Shri Vaishnav Vidyapeeth Vishwavidyalaya • Right to Repair Education
           </span>
         </div>
 
@@ -117,7 +117,7 @@ export const CollegeRepairsBanner: React.FC<CollegeRepairsBannerProps> = ({
             fontWeight: 700,
           }}
         >
-          View Original on iFixit.com <ExternalLink size={13} />
+          View Reference Guide on iFixit.com <ExternalLink size={13} />
         </a>
       </div>
 
@@ -132,7 +132,7 @@ export const CollegeRepairsBanner: React.FC<CollegeRepairsBannerProps> = ({
           lineHeight: 1.3,
         }}
       >
-        Here Are the Three Repairs You’ll Need to Know in College
+        Here Are the Three Repairs You’ll Need to Know in College — SVVV Student Edition
       </h2>
 
       <p
@@ -144,7 +144,7 @@ export const CollegeRepairsBanner: React.FC<CollegeRepairsBannerProps> = ({
           marginBottom: '20px',
         }}
       >
-        You’re off to school, loaded up with the tech you need to get through it. But at some point, a laptop fan will scream, a phone battery will drop like a stone, or a headphone jack will snap. Learning how to repair your own gear keeps your private data secure, saves thousands of dollars, and keeps e-waste out of landfills.
+        For students, lab assistants, and researchers at <strong>Shri Vaishnav Vidyapeeth Vishwavidyalaya (SVVV)</strong>: when a laptop fan screams in the campus computer lab, a phone battery drops rapidly, or an electronics multimeter cable snaps, repairing instead of replacing protects student privacy, preserves hardware budgets, and keeps e-waste out of local Indore landfills.
       </p>
 
       {/* The 3 Interactive Repair Cards */}

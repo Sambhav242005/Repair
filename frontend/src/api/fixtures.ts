@@ -13,7 +13,7 @@ import {
 export const INITIAL_ASSETS: Asset[] = [
   {
     id: 'asset_laptop_1',
-    name: 'College Student ThinkPad T480 (Core i5 / 16GB)',
+    name: 'SVVV CAD & Coding Lab ThinkPad T480 (Core i5 / 16GB)',
     category: 'computer',
     manufacturer: 'Lenovo',
     model: 'ThinkPad T480 (20L5)',
@@ -22,7 +22,7 @@ export const INITIAL_ASSETS: Asset[] = [
   },
   {
     id: 'asset_phone_1',
-    name: 'Student Smartphone (OLED / USB-C)',
+    name: 'SVVV Student Smartphone (OLED / USB-C)',
     category: 'computer',
     manufacturer: 'Apple / Google',
     model: 'Flagship 6.1" OLED',
@@ -31,7 +31,7 @@ export const INITIAL_ASSETS: Asset[] = [
   },
   {
     id: 'asset_headphones_1',
-    name: 'Noise-Cancelling Studio Headphones & Cable',
+    name: 'SVVV Electronics Lab Audio & Signal Probe Kit',
     category: 'appliance',
     manufacturer: 'Sony / Bose',
     model: 'ANC Over-Ear Wireless/Wired',
@@ -40,7 +40,7 @@ export const INITIAL_ASSETS: Asset[] = [
   },
   {
     id: 'asset_machine_1',
-    name: 'CNC Milling Center Haas VF-2',
+    name: 'SVVV Central Workshop Haas VF-2 CNC Milling Center',
     category: 'factory_machine',
     manufacturer: 'Haas Automation',
     model: 'VF-2SS High-Speed 3-Axis',
@@ -49,7 +49,7 @@ export const INITIAL_ASSETS: Asset[] = [
   },
   {
     id: 'asset_machine_2',
-    name: 'Robotic Pick & Place Arm Alpha',
+    name: 'SVVV Mechatronics Lab KUKA Robotic Pick & Place Arm Alpha',
     category: 'factory_machine',
     manufacturer: 'KUKA',
     model: 'KR 6 R900 sixx Agilus',

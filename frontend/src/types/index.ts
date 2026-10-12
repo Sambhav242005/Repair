@@ -326,4 +326,4 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
-export type DemoRole = 'operator' | 'technician' | 'planner';
+export type DemoRole = 'operator' | 'technician' | 'planner' | 'professor';

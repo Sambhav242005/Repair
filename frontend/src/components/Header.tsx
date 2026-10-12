@@ -7,7 +7,7 @@ import {
   VolumeX,
   UserCheck,
   ShieldCheck,
-  Search,
+  GraduationCap,
 } from 'lucide-react';
 import { DemoRole } from '../types';
 
@@ -22,6 +22,7 @@ interface HeaderProps {
   onToggleSound: () => void;
   role: DemoRole;
   onSelectRole: (role: DemoRole) => void;
+  onOpenAcademicModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -33,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSound,
   role,
   onSelectRole,
+  onOpenAcademicModal,
 }) => {
   return (
     <header
@@ -46,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
       }}
     >
-      {/* Top iFixit Blue Announcement Bar */}
+      {/* Top SVVV Academic Announcement Bar */}
       <div
         style={{
           backgroundColor: '#0071ce',
@@ -61,12 +63,14 @@ export const Header: React.FC<HeaderProps> = ({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ShieldCheck size={14} />
-          <span>REPAIR MANIFESTO: If you can't open it, you don't own it. Prevent premature device retirement.</span>
+          <span>
+            <strong>SHRI VAISHNAV VIDYAPEETH VISHWAVIDYALAYA (SVVV), INDORE</strong> • Department of Engineering &amp; Technology
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', opacity: 0.9 }}>
-          <span>Five-Hour MVP</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', opacity: 0.95 }}>
+          <span>Academic Evaluation 2026</span>
           <span>•</span>
-          <span>Open Contract v1.0</span>
+          <span>Right to Repair Framework</span>
         </div>
       </div>
 
@@ -87,35 +91,51 @@ export const Header: React.FC<HeaderProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div
             style={{
-              width: '44px',
-              height: '44px',
+              width: '46px',
+              height: '46px',
               borderRadius: '10px',
               backgroundColor: '#0071ce',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(0, 113, 206, 0.3)',
+              position: 'relative',
             }}
           >
-            <Wrench size={24} color="#ffffff" />
+            <Wrench size={22} color="#ffffff" />
+            <span
+              style={{
+                position: 'absolute',
+                bottom: '-4px',
+                right: '-4px',
+                backgroundColor: '#f59e0b',
+                color: '#ffffff',
+                fontSize: '9px',
+                fontWeight: 900,
+                padding: '1px 4px',
+                borderRadius: '4px',
+                border: '1px solid #ffffff',
+              }}
+            >
+              SVVV
+            </span>
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span
                 style={{
-                  fontSize: '22px',
-                  fontWeight: 800,
+                  fontSize: '20px',
+                  fontWeight: 900,
                   color: '#0071ce',
-                  letterSpacing: '-0.03em',
-                  fontFamily: 'var(--font-sans)',
+                  letterSpacing: '-0.02em',
                 }}
               >
-                iFixit
+                SVVV
               </span>
               <span
                 style={{
                   fontSize: '16px',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   color: '#0f172a',
                   letterSpacing: '-0.01em',
                 }}
@@ -123,8 +143,8 @@ export const Header: React.FC<HeaderProps> = ({
                 Repair Before Replace
               </span>
             </div>
-            <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 500 }}>
-              Step-by-step troubleshooting, parts intelligence & factory fleet care
+            <p style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 600 }}>
+              Campus Equipment Diagnostics &amp; Central Workshop Maintenance System
             </p>
           </div>
         </div>
@@ -149,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({
             }}
           >
             <Wrench size={18} />
-            <span>Repair Guides & Cases</span>
+            <span>Repair Guides &amp; Cases</span>
           </button>
 
           <button
@@ -170,12 +190,37 @@ export const Header: React.FC<HeaderProps> = ({
             }}
           >
             <Factory size={18} />
-            <span>Factory & Machinery Fleet</span>
+            <span>Workshop &amp; Lab Machinery</span>
           </button>
         </nav>
 
         {/* Header Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Viva Evaluation Modal Trigger */}
+          {onOpenAcademicModal && (
+            <button
+              id="btn-open-svvv-viva"
+              onClick={onOpenAcademicModal}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                borderRadius: '8px',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                backgroundColor: '#fef3c7',
+                color: '#b45309',
+                border: '1px solid #fde68a',
+                cursor: 'pointer',
+              }}
+              title="Open SVVV Faculty Project Evaluation & Viva Guide"
+            >
+              <GraduationCap size={16} />
+              <span>SVVV Viva Guide</span>
+            </button>
+          )}
+
           {/* Audio Chime Toggle */}
           <button
             id="toggle-sound-btn"
@@ -261,18 +306,19 @@ export const Header: React.FC<HeaderProps> = ({
               style={{
                 border: 'none',
                 background: 'transparent',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: '12px',
-                color: '#1e293b',
+                color: role === 'professor' ? '#0071ce' : '#1e293b',
                 padding: '4px',
                 cursor: 'pointer',
                 outline: 'none',
                 width: 'auto',
               }}
             >
-              <option value="technician">Role: Technician</option>
-              <option value="operator">Role: Operator</option>
-              <option value="factory_planner">Role: Factory Planner</option>
+              <option value="professor">Role: Professor (SVVV Evaluator)</option>
+              <option value="technician">Role: Lab Technician</option>
+              <option value="operator">Role: Student Apprentice</option>
+              <option value="planner">Role: Workshop Planner</option>
             </select>
           </div>
         </div>

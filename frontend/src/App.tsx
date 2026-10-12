@@ -6,6 +6,7 @@ import { SampleDataBanner } from './components/SampleDataBanner';
 import { Header, ActiveTab } from './components/Header';
 import { AlertsDrawer } from './components/AlertsDrawer';
 import { ErrorBanner } from './components/ErrorBanner';
+import { SvvvAcademicModal } from './components/SvvvAcademicModal';
 import { ImpactCards } from './features/impact/ImpactCards';
 import { AssetList } from './features/assets/AssetList';
 import { RepairCaseForm } from './features/repair/RepairCaseForm';
@@ -13,13 +14,15 @@ import { CaseView } from './features/repair/CaseView';
 import { CollegeRepairsBanner } from './features/repair/CollegeRepairsBanner';
 import { ComputerAssistancePanel } from './features/computer-assistance/ComputerAssistancePanel';
 import { FactoryDashboard } from './features/factory/FactoryDashboard';
+import { GraduationCap, Award, ChevronRight } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('repair');
   const [apiMode, setApiMode] = useState<ApiConnectionMode>(apiClient.getMode());
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
   const [isAlertsDrawerOpen, setIsAlertsDrawerOpen] = useState<boolean>(false);
-  const [role, setRole] = useState<DemoRole>('technician');
+  const [isAcademicModalOpen, setIsAcademicModalOpen] = useState<boolean>(false);
+  const [role, setRole] = useState<DemoRole>('professor');
 
   // Core Data
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -142,7 +145,7 @@ export const App: React.FC = () => {
         onResetDemo={handleResetDemo}
       />
 
-      {/* 2. Top Navigation Header */}
+      {/* 2. Top Navigation Header with SVVV Branding */}
       <Header
         activeTab={activeTab}
         onSelectTab={setActiveTab}
@@ -152,10 +155,80 @@ export const App: React.FC = () => {
         onToggleSound={() => setSoundEnabled((prev) => !prev)}
         role={role}
         onSelectRole={setRole}
+        onOpenAcademicModal={() => setIsAcademicModalOpen(true)}
       />
 
       {/* Main Container */}
       <main style={{ flex: 1, maxWidth: '1440px', width: '100%', margin: '0 auto', padding: '24px' }}>
+        {/* Professor / Evaluator Academic Banner */}
+        {role === 'professor' && (
+          <div
+            id="svvv-professor-banner"
+            style={{
+              backgroundColor: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderLeft: '4px solid #0071ce',
+              borderRadius: '10px',
+              padding: '16px 20px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '14px',
+              boxShadow: '0 2px 6px rgba(0, 113, 206, 0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '8px',
+                  backgroundColor: '#0071ce',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <GraduationCap size={20} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <strong style={{ fontSize: '14px', color: '#0f172a' }}>
+                    Shri Vaishnav Vidyapeeth Vishwavidyalaya (SVVV) — Faculty Evaluator Mode
+                  </strong>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      backgroundColor: '#dbeafe',
+                      color: '#1d4ed8',
+                      padding: '2px 8px',
+                      borderRadius: '9999px',
+                    }}
+                  >
+                    Capstone 2026
+                  </span>
+                </div>
+                <p style={{ fontSize: '12.5px', color: '#334155', marginTop: '2px', lineHeight: 1.4 }}>
+                  Evaluating AI-guided diagnosis, read-only telemetry, circular material retention, and collision-free workshop scheduling.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsAcademicModalOpen(true)}
+              className="btn-primary"
+              style={{ padding: '8px 16px', fontSize: '12.5px' }}
+            >
+              <Award size={15} /> Review Viva &amp; Architecture Details
+            </button>
+          </div>
+        )}
+
         {/* Global Error Notice with Retry */}
         <ErrorBanner
           error={globalError}
@@ -169,7 +242,7 @@ export const App: React.FC = () => {
         {/* TAB 1: REPAIR GUIDANCE & CASES */}
         {activeTab === 'repair' && (
           <div id="repair-tab-layout" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* iFixit College Repairs Feature Showcase Banner */}
+            {/* SVVV Student & Lab Repairs Feature Showcase Banner */}
             <CollegeRepairsBanner
               onSelectRepair={handleSelectCollegeRepair}
               selectedCaseId={selectedCaseId}
@@ -335,7 +408,13 @@ export const App: React.FC = () => {
         onToggleSound={() => setSoundEnabled((prev) => !prev)}
       />
 
-      {/* iFixit Clean Light Footer */}
+      {/* SVVV Academic Project Evaluation Modal */}
+      <SvvvAcademicModal
+        isOpen={isAcademicModalOpen}
+        onClose={() => setIsAcademicModalOpen(false)}
+      />
+
+      {/* SVVV Institutional Footer */}
       <footer
         style={{
           padding: '24px',
@@ -349,10 +428,10 @@ export const App: React.FC = () => {
       >
         <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <span>
-            Repair Before Replace • Inspired by <strong>iFixit Master Repair Manuals</strong> &amp; Right to Repair
+            <strong>Shri Vaishnav Vidyapeeth Vishwavidyalaya (SVVV), Indore</strong> • Faculty of Engineering &amp; Technology • Capstone 2026
           </span>
           <span style={{ fontFamily: 'var(--font-mono)', color: '#0071ce', fontWeight: 600 }}>
-            API Endpoint: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}
+            API Endpoint: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'} • Timezone: Asia/Kolkata (IST)
           </span>
         </div>
       </footer>
