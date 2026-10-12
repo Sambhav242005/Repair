@@ -14,6 +14,34 @@ $env:CF_EXECUTABLE = 'C:\path\to\cf.ps1'
 python -m scripts.desktop_runner
 ```
 
+For a visible workflow/decision trace, run `python -m scripts.desktop_runner --debug --inspect-only`.
+The Debug checkbox shows observed labels, Gemma's ordered workflow, its next subgoal, the exact Clef request body,
+validated option probabilities, guards and effect verification. The Inspect only checkbox calls the real providers
+but executes no input; the session ends with `needs_user`, never a claimed action success. Debug events appear live
+on a separate tab and stay in memory (no automatic file logging). They include the submitted goal/labels, but no tokens,
+authentication headers, raw CLI stderr or screenshots.
+
+Gemma creates up to 12 workflow steps, each with an instruction, expected observation and stop condition.
+The user goal must remain unchanged. Clef receives the complete advisory workflow plus current controls,
+Gemma's next subgoal and recent verified effects for every choice. Workflow steps are guidance, not executable code
+or independent proof of completion; the candidate policy and user-supplied acceptance remain authoritative.
+
+To check provider decisions without opening an app:
+
+```powershell
+python -m scripts.desktop_debug --sample
+```
+
+This uses clearly labelled synthetic Calculator controls with **real Gemma and Clef calls**, and cannot execute input.
+For real labels, run `python -m scripts.desktop_debug` to list supported windows, then
+`python -m scripts.desktop_debug --window-handle <handle> --goal 'Display 7 in Calculator'`.
+That CLI always inspects only. The user still needs to open their chosen app before inspecting real UIA labels.
+
+The live sample workflow inspection passed on 2026-10-12: Clef chose the offered Seven invoke with probability
+0.892. `fixtures/automation/workflow_debug_result.json` records the result as sample data with
+`input_executed: false`; this is not a successful desktop action trace. Provider failures also surface explicitly
+in the debug result before input.
+
 Install/sign in to Ollama and install/authenticate the Cloudflare cf CLI. Credentials stay in their respective local provider configuration; this module does not print them. Cloudflare calls use `cf ai run @cf/cloudflare/clef --body @<temporary-file>`. Request files are deleted after each call. `cf ai get-model-schema --model @cf/cloudflare/clef` was used to verify the contract.
 
 Open Calculator yourself, Refresh windows, select its HWND, and Observe. Set goal `Display 7 in Calculator`, acceptance automation ID `CalculatorResults`, and exact accessible name from your app's language (English commonly `Display is 7`). Start. A fresh UIA observation must match the exact acceptance. A successful input receipt or Gemma `done` is insufficient. Stop remains visible during inference; it cancels the pending helper and blocks subsequent inputs. Already delivered inputs cannot be undone. Close also requests Stop.

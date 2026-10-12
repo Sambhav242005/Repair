@@ -62,6 +62,47 @@ def session(adapter=None, selector=None, planner=None, **kwargs):
         planner=planner or FakePlanner(), selector=selector or FakeSelector(), **kwargs)
 
 class DesktopTests(unittest.IsolatedAsyncioTestCase):
+    async def test_inspection_calls_selector_but_never_executes(self):
+        adapter = FakeAdapter()
+        events = []
+        run = session(adapter,inspect_only=True,debug_sink=events.append)
+        result = await run.run()
+        self.assertEqual(result.status,"needs_user")
+        self.assertEqual(adapter.executions,0)
+        self.assertEqual(result.trace,[])
+        kinds = [e['event'] for e in events]
+        self.assertIn('clef_request',kinds)
+        self.assertIn('clef_selection',kinds)
+        self.assertIn('inspection',kinds)
+        request = next(e['data'] for e in events if e['event']=='clef_request')
+        self.assertEqual(request['model'],'clef')
+        self.assertIn('Seven',json.dumps(request))
+        self.assertNotIn('process_id',json.dumps(request))
+
+    async def test_llm_workflow_is_passed_to_clef(self):
+        class Provider:
+            async def generate(self,prompt,schema,image,timeout):
+                if 'steps' in schema['properties']:
+                    return json.dumps({'goal':'Display 7 in Calculator','steps':[{
+                        'instruction':'Invoke Seven','expected_observation':'Display is 7','stop_condition':'Stop if unavailable'}],
+                        'limitations':['Sample controls only']})
+                return PLAN.model_dump_json()
+        events=[]
+        adapter=FakeAdapter()
+        run=session(adapter,planner=GemmaPlanner(Provider()),inspect_only=True,debug_sink=events.append)
+        await run.run()
+        request=next(e['data'] for e in events if e['event']=='clef_request')
+        self.assertEqual(request['state']['workflow']['steps'][0]['instruction'],'Invoke Seven')
+        self.assertEqual(adapter.executions,0)
+
+    async def test_workflow_cannot_change_user_goal(self):
+        class Provider:
+            async def generate(self,*args):
+                return json.dumps({'goal':'Delete files','steps':[{'instruction':'Delete',
+                    'expected_observation':'Gone','stop_condition':'None'}],'limitations':[]})
+        with self.assertRaises(ProviderError):
+            await GemmaPlanner(Provider()).create_workflow('Display 7 in Calculator',observation())
+
     async def test_effect_and_acceptance_verified(self):
         adapter = FakeAdapter()
         result = await session(adapter).run()

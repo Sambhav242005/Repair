@@ -12,7 +12,7 @@ Updated 2026-10-12. Sambhav's service implementation is delivered. The user defe
 
 Gemini/Ollama repair and screenshot services; configurable gemma4:31b-cloud; strict schemas/fixtures; Clef Choice through cf CLI; Windows UIA observer and bounded executor; Gemma planning and host-generated candidates; fresh effect/acceptance verification; Stop and budgets; local desktop runner; privacy-preserving diagnostic collector; service contract and setup docs. Factory assessments cannot expose model-generated machinery repair steps. The fabricated browser service now fails explicitly.
 
-40 automated checks pass: 18 AI and 22 automation/collector checks. Tests cover malformed choices, unknown/stale controls, unavailable providers, false completion, no effect, Stop (including interrupted input traces), budgets, factory escalation, and actual collector import through an isolated API database. Live synthetic Clef inference succeeded through CLI and Python; live Gemma returned a valid plan against supplied synthetic controls. None of those provider checks is a successful native action trace.
+43 automated checks pass: 18 AI and 25 automation/collector checks. Tests cover malformed choices, unknown/stale controls, unavailable providers, false completion, no effect, Stop (including interrupted input traces), budgets, factory escalation, and actual collector import through an isolated API database. Live synthetic Clef inference succeeded through CLI and Python; live Gemma returned a valid plan against supplied synthetic controls. None of those provider checks is a successful native action trace.
 
 ## Review evidence and unresolved teammate issues
 
@@ -22,7 +22,7 @@ Remaining confirmed issues: missing maintenance completion timestamp, failed liv
 
 The teammate's repair/provider-failure tests now use explicit offline provider mocks. The legacy browser test now expects the explicit unavailable job, matching the native amendment. Frontend build and complete app flows remain unverified.
 
-After merging d39af30, all seven backend smoke tests passed against temporary isolated database and upload paths. Combined with the 40 AI/automation checks, this delivery has 47 passing automated checks; real native action acceptance remains pending.
+After merging d39af30, all seven backend smoke tests passed against temporary isolated database and upload paths. Combined with the 43 AI/automation checks, this delivery has 50 passing automated checks; real native action acceptance remains pending.
 
 ## Integration sequence
 

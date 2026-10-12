@@ -11,7 +11,8 @@ Implementation is delivered; live desktop acceptance remains pending at the user
 - [x] Native Windows UIA observer/executor, selected-window guards, bounded numeric text/keys/scroll, optional selected-HWND screenshot, Stop and deadlines.
 - [x] Gemma planner, grounded host candidates, fresh-state re-grounding and independent acceptance/no-effect verification. Live synthetic Gemma plan passed.
 - [x] Read-only collector with canonical payload, UTC time and private identifiers omitted; real collector output imported through the isolated API.
-- [x] 18 AI tests and 22 automation/collector tests pass. Factory operational steps are replaced with qualified-technician escalation.
+- [x] 18 AI tests and 25 automation/collector tests pass. Factory operational steps are replaced with qualified-technician escalation.
+- [x] LLM-generated ordered workflow passed to Clef; live debug event tab and inspection-only CLI/UI. Live synthetic workflow/selection check passed with no input.
 - [x] Local runner with selected application, goal, Observe, Start, result trace and visible Stop. Integration README and setup supplied.
 - [ ] Live selected Calculator input/value verification and Stop demonstration; then Task Manager/Settings navigation. No successful real desktop action trace yet.
 - [ ] Gemini live call once a Gemini key/model is supplied (Ollama is configured and live-checked).

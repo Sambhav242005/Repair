@@ -43,6 +43,16 @@ class Plan(Record):
     preferred_control_id: str | None
     done: bool
 
+class WorkflowStep(Record):
+    instruction: str = Field(min_length=1, max_length=500)
+    expected_observation: str = Field(min_length=1, max_length=500)
+    stop_condition: str = Field(min_length=1, max_length=300)
+
+class Workflow(Record):
+    goal: str = Field(min_length=1, max_length=500)
+    steps: list[WorkflowStep] = Field(min_length=1, max_length=12)
+    limitations: list[str] = Field(max_length=12)
+
 class Selection(Record):
     action_id: str
     probabilities: dict[str, float]
