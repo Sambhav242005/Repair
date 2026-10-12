@@ -10,10 +10,10 @@ Owned paths: `frontend/`, frontend handover documentation and frontend tests. Su
 
 Do these in order:
 
-- [ ] Fix maintenance completion: send `completed_at` with an explicit UTC offset; verify the real API creates the next recurring task.
-- [ ] Remove automatic replay of failed live requests against mock data. Show a network error and retry; sample mode must be explicitly selected and visibly labelled.
+- [ ] Commit 9be960e sends maintenance completion timestamps; verify the real flow: send `completed_at` with an explicit UTC offset; verify the real API creates the next recurring task.
+- [ ] Commit 9be960e removed automatic live-to-mock replay; verify disconnected/invalid-response behavior. Show a network error and retry; sample mode must be explicitly selected and visibly labelled.
 - [ ] Connect the existing repair form, screenshot upload and diagnostic import to real backend responses. Show provider failures and preserve saved cases after reload.
-- [ ] Build Desktop Assistance UI after agreeing the contract: selected app, goal, Start, progress, actual action trace, Stop, failure/retry and verified completion.
+- [ ] Commit 9be960e added Desktop Assistance UI/client calls; align them with the backend and local acceptance/window contract, then verify: selected app, goal, Start, progress, actual action trace, Stop, failure/retry and verified completion.
 - [ ] Distinguish screenshot advice from actions actually performed. Do not display synthetic action traces as live desktop activity.
 - [ ] Verify schedule conflict messages, lesson/production completion, alert acknowledgement and user-enabled sound once per new alert.
 - [ ] Check mobile layout, keyboard access, long AI text and Asia/Kolkata date display.
